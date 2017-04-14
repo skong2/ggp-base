@@ -1,6 +1,7 @@
 package org.ggp.base.player.gamer.statemachine.nottoworry;
 
 import java.util.List;
+import java.util.Random;
 
 import org.ggp.base.apps.player.detail.DetailPanel;
 import org.ggp.base.apps.player.detail.SimpleDetailPanel;
@@ -15,7 +16,7 @@ import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
-public class NotToWorryLegalGamer extends NotToWorryGamer {
+public class NotToWorryRandomGamer extends NotToWorryGamer {
 
 	@Override
 	public Move stateMachineSelectMove(long timeout)
@@ -32,7 +33,7 @@ public class NotToWorryLegalGamer extends NotToWorryGamer {
 		List<Move> moves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
 
 		// SampleLegalGamer is very simple : it picks the first legal move
-		Move selection = moves.get(0);
+		Move selection = (moves.get(new Random().nextInt(moves.size())));
 
 		// We get the end time
 		// It is mandatory that stop<timeout

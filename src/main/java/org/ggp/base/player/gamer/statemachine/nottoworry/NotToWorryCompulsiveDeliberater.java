@@ -20,7 +20,6 @@ import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
 public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
-	HashSet<MachineState> previousStates = new HashSet<MachineState>();
 
 	private class StateUtilityMove {
 		public HashSet<MachineState> prev;
@@ -32,7 +31,32 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		}
 	}
 
-	private int findStateUtility(ArrayList<StateUtilityMove> queue, Role r) throws TransitionDefinitionException, GoalDefinitionException, MoveDefinitionException {;
+	//does not use state checking but is much more space efficient and marginally faster
+	private int findStateUtility(ArrayList<MachineState> queue, Role r) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
+		StateMachine mach = getStateMachine();
+		int stateUtility = -1;
+		List<Move> singleMove = new ArrayList<Move>();
+		while(queue.size() != 0) {
+			MachineState curr = queue.remove(0);
+			if(mach.isTerminal(curr)) {
+				int finalScore = mach.getGoal(curr, r);
+				if(finalScore == 100) return 100;
+				else if (finalScore > stateUtility) stateUtility = finalScore;
+			} else {
+				List<Move> moves = mach.getLegalMoves(curr, r);
+				for(Move m: moves) {
+					singleMove.add(m);
+					MachineState nextState = mach.getNextState(curr, singleMove);
+					queue.add(nextState);
+					singleMove.clear();
+				}
+			}
+		}
+		return stateUtility;
+	}
+
+	//has state checking to avoid making moves that would return it to previously viewed states using private StateUtilityMove class
+	private int findStateUtilityRobust(ArrayList<StateUtilityMove> queue, Role r) throws TransitionDefinitionException, GoalDefinitionException, MoveDefinitionException {;
 		StateMachine mach = getStateMachine();
 		List<Move> singleMove = new ArrayList<Move>();
 		int stateUtility = -1;
@@ -81,25 +105,18 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		Move bestMove = moves.get(0); //initialize
 		StateMachine mach = getStateMachine();
 		int maxUtility = -1;
-		System.out.println("prev moves made: " + previousStates.size());
 		//for each move, calculate state utility and then return move with highest state utility
-		previousStates.add(getCurrentState()); //add state before move was made to list of previous states
 
 		for(Move m: moves) {
-			ArrayList<StateUtilityMove> queue = new ArrayList<StateUtilityMove>();
+			ArrayList<MachineState> queue = new ArrayList<MachineState>();
 			ArrayList<Move> singleMove = new ArrayList<Move>();
 			singleMove.add(m);
 			MachineState nextState = mach.getNextState(getCurrentState(), singleMove);
-
-			//only make this move if it would not lead to a previous state
-			if(!previousStates.contains(nextState)) {
-				StateUtilityMove initialSUM = new StateUtilityMove(new HashSet<MachineState>(previousStates), nextState);
-				queue.add(initialSUM);
-				int stateUtility = findStateUtility(queue, getRole());
-				if(stateUtility > maxUtility) {
-					maxUtility = stateUtility;
-					bestMove = m;
-				}
+			queue.add(nextState);
+			int stateUtility = findStateUtility(queue, getRole());
+			if(stateUtility > maxUtility) {
+				maxUtility = stateUtility;
+				bestMove = m;
 			}
 		}
 
@@ -138,7 +155,7 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		return new CachedStateMachine(new ProverStateMachine());
 	}
 
-	// This is the defaul Sample Panel
+	// This is the default Sample Panel
 	@Override
 	public DetailPanel getDetailPanel() {
 		return new SimpleDetailPanel();
@@ -147,13 +164,11 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 	@Override
 	public void stateMachineStop() {
 		// Sample gamers do no special cleanup when the match ends normally.
-		previousStates.clear();
 	}
 
 	@Override
 	public void stateMachineAbort() {
 		// Sample gamers do no special cleanup when the match ends abruptly.
-		previousStates.clear();
 	}
 
 	@Override

@@ -32,17 +32,17 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		}
 	}
 
-	private int findStateUtility(ArrayList<StateUtilityMove> queue, Role r) throws TransitionDefinitionException, GoalDefinitionException, MoveDefinitionException {
+	private int findStateUtility(ArrayList<StateUtilityMove> queue, Role r) throws TransitionDefinitionException, GoalDefinitionException, MoveDefinitionException {;
 		StateMachine mach = getStateMachine();
 		List<Move> singleMove = new ArrayList<Move>();
 		int stateUtility = -1;
 		while(queue.size() != 0) { // iterates through queue of moves until there are no longer possible moves
-			//System.out.println("queue size: " + queue.size());
 			StateUtilityMove curr = queue.remove(0); //pops off the queue
 			if(curr.prev.contains(curr.state)) {
 				System.out.println("continued");
 				continue; //if current state has been visited before, it must be a repeat move
 			}
+
 			if(mach.isTerminal(curr.state)) { //if current state is terminal, calculate what it would be
 				int finalScore = mach.getGoal(curr.state, r);
 				if(finalScore == 100) return 100; //if 100 return immediately
@@ -61,7 +61,7 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 				}
 			}
 		}
-		System.out.println(stateUtility);
+		System.out.println("state utility: " + stateUtility);
 		return stateUtility;
 	}
 
@@ -83,14 +83,17 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		int maxUtility = -1;
 		System.out.println("prev moves made: " + previousStates.size());
 		//for each move, calculate state utility and then return move with highest state utility
+		previousStates.add(getCurrentState()); //add state before move was made to list of previous states
+
 		for(Move m: moves) {
 			ArrayList<StateUtilityMove> queue = new ArrayList<StateUtilityMove>();
 			ArrayList<Move> singleMove = new ArrayList<Move>();
 			singleMove.add(m);
+			MachineState nextState = mach.getNextState(getCurrentState(), singleMove);
 
 			//only make this move if it would not lead to a previous state
-			if(!previousStates.contains(mach.getNextState(getCurrentState(), singleMove))) {
-				StateUtilityMove initialSUM = new StateUtilityMove(new HashSet<MachineState>(previousStates), getCurrentState());
+			if(!previousStates.contains(nextState)) {
+				StateUtilityMove initialSUM = new StateUtilityMove(new HashSet<MachineState>(previousStates), nextState);
 				queue.add(initialSUM);
 				int stateUtility = findStateUtility(queue, getRole());
 				if(stateUtility > maxUtility) {
@@ -99,7 +102,6 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 				}
 			}
 		}
-		previousStates.add(getCurrentState()); //initialize previous states
 
 		// We get the end time
 		// It is mandatory that stop<timeout

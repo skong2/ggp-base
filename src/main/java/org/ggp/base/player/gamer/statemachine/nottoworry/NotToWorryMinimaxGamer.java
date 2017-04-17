@@ -1,14 +1,16 @@
 package org.ggp.base.player.gamer.statemachine.nottoworry;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import org.ggp.base.apps.player.detail.DetailPanel;
 import org.ggp.base.apps.player.detail.SimpleDetailPanel;
 import org.ggp.base.player.gamer.event.GamerSelectedMoveEvent;
 import org.ggp.base.player.gamer.exception.GamePreviewException;
 import org.ggp.base.util.game.Game;
+import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
+import org.ggp.base.util.statemachine.Role;
 import org.ggp.base.util.statemachine.StateMachine;
 import org.ggp.base.util.statemachine.cache.CachedStateMachine;
 import org.ggp.base.util.statemachine.exceptions.GoalDefinitionException;
@@ -18,24 +20,67 @@ import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
 public class NotToWorryMinimaxGamer extends NotToWorryGamer {
 
+	public int minScore(Role role, Move action, MachineState state)
+			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
+		Role opponent = null;
+		for (Role r: getStateMachine().getRoles()) {
+			if (!r.equals(role)) {
+				opponent = r;
+			}
+		}
+		List<Move> actions = getStateMachine().getLegalMoves(state, opponent);
+		int score = 100;
+		for (int i = 0; i < actions.size(); i++) {
+			List<Move> moves;
+			if (role.equals(getStateMachine().getRoles().get(0))) {
+				moves = Arrays.asList(action, actions.get(i));
+			} else {
+				moves = Arrays.asList(actions.get(i), action);
+			}
+			MachineState newState = getStateMachine().getNextState(state, moves);
+			int result = maxScore(role, newState);
+			if (result < score) {
+				score = result;
+			}
+		}
+		return score;
+	}
+
+	public int maxScore(Role role, MachineState state)
+			throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
+		if (getStateMachine().isTerminal(state)) {
+			return getStateMachine().getGoal(state, role);
+		}
+		List<Move> actions = getStateMachine().getLegalMoves(state, role);
+		int score = 0;
+		for (int i = 0; i < actions.size(); i++) {
+			int result = minScore(role, actions.get(i), state);
+			if (result > score) {
+				score = result;
+			}
+		}
+		return score;
+	}
+
 	@Override
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
-		// We get the current start time
+
 		long start = System.currentTimeMillis();
 
-		/**
-		 * We put in memory the list of legal moves from the
-		 * current state. The goal of every stateMachineSelectMove()
-		 * is to return one of these moves. The choice of which
-		 * Move to play is the goal of GGP.
-		 */
-		List<Move> moves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
-
-		Move selection = (moves.get(new Random().nextInt(moves.size())));
-
-		// We get the end time
-		// It is mandatory that stop<timeout
+		List<Move> actions = getStateMachine().getLegalMoves(getCurrentState(), getRole());
+		Move selection = actions.get(0);
+		int score = 0;
+		for (int i = 0; i < actions.size(); i++) {
+			int result = minScore(getRole(), actions.get(i), getCurrentState());
+			if (result == 100) {
+				return actions.get(i);
+			}
+			if (result > score) {
+				score = result;
+				selection = actions.get(i);
+			}
+		}
 		long stop = System.currentTimeMillis();
 
 		/**
@@ -44,7 +89,7 @@ public class NotToWorryMinimaxGamer extends NotToWorryGamer {
 		 * moves, selection, stop and start defined in the same way as
 		 * this example, and copy-paste these two lines in your player
 		 */
-		notifyObservers(new GamerSelectedMoveEvent(moves, selection, stop - start));
+		notifyObservers(new GamerSelectedMoveEvent(null, selection, stop - start));
 		return selection;
 	}
 

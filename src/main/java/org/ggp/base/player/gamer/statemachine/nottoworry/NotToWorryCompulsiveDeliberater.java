@@ -105,8 +105,8 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		Move bestMove = moves.get(0); //initialize
 		StateMachine mach = getStateMachine();
 		int maxUtility = -1;
-		//for each move, calculate state utility and then return move with highest state utility
 
+		//for each move, calculate state utility and then return move with highest state utility
 		for(Move m: moves) {
 			ArrayList<MachineState> queue = new ArrayList<MachineState>();
 			ArrayList<Move> singleMove = new ArrayList<Move>();

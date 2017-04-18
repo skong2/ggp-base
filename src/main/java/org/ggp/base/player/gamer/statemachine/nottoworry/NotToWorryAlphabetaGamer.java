@@ -81,7 +81,7 @@ public class NotToWorryAlphabetaGamer extends NotToWorryGamer {
 		Move selection = actions.get(0);
 		int score = 0;
 		for (int i = 0; i < actions.size(); i++) {
-			int result = minScore(getRole(), actions.get(i), getCurrentState(),100,0);
+			int result = minScore(getRole(), actions.get(i), getCurrentState(),0,100);
 			if (result == 100) {
 				return actions.get(i);
 			}

@@ -98,7 +98,7 @@ public class NotToWorryAlphabetaGamer extends NotToWorryGamer {
 		 * moves, selection, stop and start defined in the same way as
 		 * this example, and copy-paste these two lines in your player
 		 */
-		notifyObservers(new GamerSelectedMoveEvent(null, selection, stop - start));
+		notifyObservers(new GamerSelectedMoveEvent(actions, selection, stop - start));
 		return selection;
 	}
 

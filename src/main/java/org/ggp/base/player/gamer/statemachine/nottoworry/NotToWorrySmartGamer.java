@@ -20,6 +20,8 @@ import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
 public class NotToWorrySmartGamer extends NotToWorryGamer {
+	private long start;
+	private int maxTime;
 	//smart gamer selects a method to use depending on number of gamers
 
 	//-------------METHODS FOR USE WITH SPECIFIC GAMERS
@@ -82,6 +84,9 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		if (getStateMachine().isTerminal(state)) {
 			return getStateMachine().getGoal(state, role);
 		}
+		if(System.currentTimeMillis() - start > maxTime*0.8) {
+			return 0;
+		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		//int score = 0;
 		for (int i = 0; i < actions.size(); i++) {
@@ -137,7 +142,9 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
 		// We get the current start time
-		long start = System.currentTimeMillis();
+		start = System.currentTimeMillis();
+
+		maxTime = getMatch().getPlayClock()*1000;
 
 		/**
 		 * We put in memory the list of legal moves from the

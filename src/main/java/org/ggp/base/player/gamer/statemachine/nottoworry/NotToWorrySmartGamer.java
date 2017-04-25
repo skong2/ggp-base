@@ -22,6 +22,16 @@ import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private long start;
 	private int maxTime;
+
+	//-------------GENERAL HELPER METHODS
+	private int mobilityHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException{
+		//number of states reachable from this step
+		//go down into each one once, and add up all possible states
+		int possibleStates = getStateMachine().getNextStates(state).size();
+		return possibleStates;
+	}
+
+
 	//smart gamer selects a method to use depending on number of gamers
 
 	//-------------METHODS FOR USE WITH SPECIFIC GAMERS
@@ -85,7 +95,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			return getStateMachine().getGoal(state, role);
 		}
 		if(System.currentTimeMillis() - start > maxTime*0.8) {
-			return 0;
+			return mobilityHeuristic(role, state);
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		//int score = 0;

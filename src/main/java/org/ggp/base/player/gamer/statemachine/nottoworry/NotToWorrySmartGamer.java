@@ -2,6 +2,7 @@ package org.ggp.base.player.gamer.statemachine.nottoworry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.ggp.base.apps.player.detail.DetailPanel;
@@ -162,7 +163,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
 		// We get the current start time
 		start = System.currentTimeMillis();
-
+		foundWin = false;
 		maxTime = getMatch().getPlayClock()*1000;
 
 		/**
@@ -174,6 +175,8 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 
 		List<Role> roles = getStateMachine().getRoles();
 		List<Move> moves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
+		moves = new ArrayList<Move>(moves);
+		Collections.shuffle(moves);
 		Move selection = null;
 		if(roles.size() > 1) {
 			//use alphabeta gamer

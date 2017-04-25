@@ -24,17 +24,28 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private long start;
 	private int maxTime;
 	private boolean foundWin = false;
+	private int totalMobility;
 
 	//-------------GENERAL HELPER METHODS
+	private int totalMobilityHeuristic() throws MoveDefinitionException, TransitionDefinitionException {
+		int totalMobility = 1;
+		List<MachineState> nextStates = getStateMachine().getNextStates(getCurrentState());
+		for(MachineState s: nextStates) {
+			totalMobility += getStateMachine().getNextStates(s).size();
+		}
+		return totalMobility;
+	}
+
 	private int mobilityHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException{
 		//number of states reachable from this step
 		//go down into each one once, and add up all possible states
 		int possibleStates = getStateMachine().getNextStates(state).size();
-		return possibleStates;
+		Double normalized = (double) ((possibleStates/totalMobility)*100);
+		return normalized.intValue(); //returns normalized value between 0 and 100
 	}
 
 	private int goalProximityHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
-		return getStateMachine().getGoal(state, role);
+		return getStateMachine().getGoal(state, role); //returns goal score between 0 and 100
 	}
 
 	private int opponentHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
@@ -46,7 +57,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		for( Role opponent : opponents) {
 			opponentMaxScore += goalProximityHeuristic(opponent, state) + mobilityHeuristic(opponent, state);
 		}
-		return opponentMaxScore/opponents.size();
+		return (opponentMaxScore*100)/opponents.size();
 	}
 
 	//smart gamer selects a method to use depending on number of gamers
@@ -58,6 +69,14 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		List<Move> singleMove = new ArrayList<Move>();
 		while(queue.size() != 0) {
 			MachineState curr = queue.remove(0);
+			//if time clocks down calculate heuristic
+			if(System.currentTimeMillis() - start > maxTime*0.8) {
+				if(foundWin) return 0;
+				int goalScore = goalProximityHeuristic(r, curr);
+				int mobilityScore = mobilityHeuristic(r, curr);
+				return goalScore + mobilityScore;
+			}
+
 			if(mach.isTerminal(curr)) {
 				int finalScore = mach.getGoal(curr, r);
 				if(finalScore == 100) return 100;
@@ -115,7 +134,6 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			int goalScore = goalProximityHeuristic(role, state);
 			int mobilityScore = mobilityHeuristic(role, state);
 			return goalScore + mobilityScore - (int)(0.5*opponentHeuristic(role, state));
-			//return mobilityHeuristic(role, state);
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		//int score = 0;
@@ -186,6 +204,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		List<Role> roles = getStateMachine().getRoles();
 		List<Move> moves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
 		moves = new ArrayList<Move>(moves);
+		totalMobility = totalMobilityHeuristic();
 		Collections.shuffle(moves);
 		Move selection = null;
 		if(roles.size() > 1) {

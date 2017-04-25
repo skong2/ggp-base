@@ -31,23 +31,38 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		}
 	}
 
+	//class for keeping track of depth and state
+	private class DepthState {
+		public MachineState state;
+		public int depth;
+		public DepthState(MachineState s, int d) {
+			this.state = s;
+			this.depth = d; //initialize depth (depths start at 1) and state
+		}
+	}
+
 	//does not use state checking but is much more space efficient and marginally faster
-	private int findStateUtility(ArrayList<MachineState> queue, Role r) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
+	private int findStateUtility(ArrayList<DepthState> queue, Role r, int depthLimit) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		StateMachine mach = getStateMachine();
 		int stateUtility = -1;
 		List<Move> singleMove = new ArrayList<Move>();
 		while(queue.size() != 0) {
-			MachineState curr = queue.remove(0);
-			if(mach.isTerminal(curr)) {
-				int finalScore = mach.getGoal(curr, r);
+			DepthState curr = queue.remove(0);
+			if(mach.isTerminal(curr.state)) {
+				int finalScore = mach.getGoal(curr.state, r);
 				if(finalScore == 100) return 100;
 				else if (finalScore > stateUtility) stateUtility = finalScore;
 			} else {
-				List<Move> moves = mach.getLegalMoves(curr, r);
+				if(curr.depth > depthLimit) {
+					System.out.println("we in too deep");
+					continue; //if depth is greater than depthLimit, do not proceed further down branch
+				}
+				List<Move> moves = mach.getLegalMoves(curr.state, r);
 				for(Move m: moves) {
 					singleMove.add(m);
-					MachineState nextState = mach.getNextState(curr, singleMove);
-					queue.add(nextState);
+					MachineState nextState = mach.getNextState(curr.state, singleMove);
+					DepthState d = new DepthState(nextState, curr.depth+1); //compile new state and depth+1 , add back to queue
+					queue.add(d);
 					singleMove.clear();
 				}
 			}
@@ -107,13 +122,16 @@ public class NotToWorryCompulsiveDeliberater extends NotToWorryGamer {
 		int maxUtility = -1;
 
 		//for each move, calculate state utility and then return move with highest state utility
+		int depthLimit = 5; //arbitrarily chosen for now
+
 		for(Move m: moves) {
-			ArrayList<MachineState> queue = new ArrayList<MachineState>();
+			ArrayList<DepthState> queue = new ArrayList<DepthState>();
 			ArrayList<Move> singleMove = new ArrayList<Move>();
 			singleMove.add(m);
 			MachineState nextState = mach.getNextState(getCurrentState(), singleMove);
-			queue.add(nextState);
-			int stateUtility = findStateUtility(queue, getRole());
+			DepthState d = new DepthState(nextState, 1); //initialize depth state
+			queue.add(d);
+			int stateUtility = findStateUtility(queue, getRole(), depthLimit);
 			if(stateUtility > maxUtility) {
 				maxUtility = stateUtility;
 				bestMove = m;

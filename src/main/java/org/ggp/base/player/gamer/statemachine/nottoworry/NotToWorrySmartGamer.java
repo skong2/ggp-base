@@ -24,6 +24,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private int maxTime;
 	private boolean foundWin = false;
 	private int totalMobility;
+	public static final double timeoutBuffer = 0.7;
 
 	//-------------GENERAL HELPER METHODS
 	private int totalMobilityHeuristic() throws MoveDefinitionException, TransitionDefinitionException {
@@ -44,8 +45,8 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		return (possibleStates*100)/totalMobility;
 	}
 
-	private int goalProximityHeuristic(Role role, MachineState state, int prevgoal) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
-		return getStateMachine().getGoal(state, role)-prevgoal; //returns net goal gain/loss by subtracting new goal from current goal
+	private int goalProximityHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
+		return getStateMachine().getGoal(state, role);
 	}
 
 	private int opponentHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
@@ -64,8 +65,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		opponentMaxScore /= totalActions;
 		//System.out.println("opponent mobility: " + opponentMaxScore + "%");
 		for(Role opponent: opponents) {
-			int goal = getStateMachine().getGoal(state, opponent);
-			opponentMaxScore += goalProximityHeuristic(opponent, state, goal);
+			opponentMaxScore += goalProximityHeuristic(opponent, state);
 		}
 		return opponentMaxScore;
 	}
@@ -80,10 +80,9 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		while(queue.size() != 0) {
 			MachineState curr = queue.remove(0);
 			//if time clocks down calculate heuristic
-			if(System.currentTimeMillis() - start > maxTime*0.8) {
+			if(System.currentTimeMillis() - start > maxTime*timeoutBuffer) {
 				if(foundWin) return 0;
-				int goal = mach.getGoal(curr, r);
-				int goalScore = goalProximityHeuristic(r, curr, goal);
+				int goalScore = goalProximityHeuristic(r, curr);
 				int mobilityScore = mobilityHeuristic(r, curr);
 				return goalScore + mobilityScore;
 			}
@@ -105,22 +104,22 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		return stateUtility;
 	}
 
-	public int minScore(Role role, MachineState state, int alpha, int beta, int prevGoal, int turn)
+	public int minScore(Role role, MachineState state, int alpha, int beta, int turn)
 			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
 			int goal = getStateMachine().getGoal(state, role);
-			if(goal >= 100) {
+			if(goal == 100) {
 				foundWin = true;
 			}
 			return goal;
 		}
-		if(System.currentTimeMillis() - start > maxTime * 0.8) {
+		if(System.currentTimeMillis() - start > maxTime * timeoutBuffer) {
 			if(foundWin) {
 				return 0;
 			}
-			int goalScore = goalProximityHeuristic(role, state, prevGoal);
+			int goalScore = goalProximityHeuristic(role, state);
 			int mobilityScore = mobilityHeuristic(role, state);
-			return goalScore + mobilityScore - (int)(0.5*opponentHeuristic(role, state));
+			return goalScore + mobilityScore - opponentHeuristic(role, state);
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		for (int i = 0; i < actions.size(); i++) {
@@ -128,12 +127,11 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			for (int j = 0; j < jointActions.size(); j++) {
 				List<Move> moves = jointActions.get(j);
 				MachineState newState = getStateMachine().getNextState(state, moves);
-				prevGoal = getStateMachine().getGoal(getCurrentState(), role);
 				int result;
 				if (turn == getStateMachine().getRoles().size() - 1) {
-					result = maxScore(role, newState, alpha, beta, prevGoal);
+					result = maxScore(role, newState, alpha, beta);
 				} else {
-					result = minScore(role, newState, alpha, beta, prevGoal, turn + 1);
+					result = minScore(role, newState, alpha, beta, turn + 1);
 				}
 				beta = Math.min(beta, result);
 				if (beta <= alpha) {
@@ -144,7 +142,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		return beta;
 	}
 
-	public int maxScore(Role role, MachineState state, int alpha, int beta, int prevGoal)
+	public int maxScore(Role role, MachineState state, int alpha, int beta)
 			throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
 			int goal = getStateMachine().getGoal(state, role);
@@ -153,15 +151,13 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			}
 			return goal;
 		}
-		if(System.currentTimeMillis() - start > maxTime * 0.8) {
+		if(System.currentTimeMillis() - start > maxTime * timeoutBuffer) {
 			if(foundWin) {
 				return 0;
 			}
-			int goalScore = goalProximityHeuristic(role, state, prevGoal);
+			int goalScore = goalProximityHeuristic(role, state);
 			int mobilityScore = mobilityHeuristic(role, state);
-			int heuristic = goalScore + mobilityScore - opponentHeuristic(role, state);
-			if(heuristic >= 100) return 99; //prioritize terminal states
-			else return heuristic;
+			return goalScore + mobilityScore - opponentHeuristic(role, state);
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		for (int i = 0; i < actions.size(); i++) {
@@ -169,7 +165,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			for (int j = 0; j < jointActions.size(); j++) {
 				List<Move> moves = jointActions.get(j);
 				MachineState newState = getStateMachine().getNextState(state, moves);
-				int result = minScore(role, newState, alpha, beta, prevGoal, 1);
+				int result = minScore(role, newState, alpha, beta, 1);
 				alpha = Math.max(alpha, result);
 				if (alpha >= beta) {
 					return beta;
@@ -209,7 +205,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			for (int j = 0; j < jointActions.size(); j++) {
 				List<Move> moves = jointActions.get(j);
 				MachineState newState = getStateMachine().getNextState(getCurrentState(), moves);
-				int result = minScore(getRole(), newState, 0, 100, 0, turn);
+				int result = minScore(getRole(), newState, 0, 100, turn);
 				if (result == 100) {
 					return actions.get(i);
 				}

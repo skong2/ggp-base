@@ -1,7 +1,6 @@
 package org.ggp.base.player.gamer.statemachine.nottoworry;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -94,31 +93,41 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		return stateUtility;
 	}
 
-	public int minScore(Role role, Move action, MachineState state, int alpha, int beta)
+	public int minScore(Role role, MachineState state, int alpha, int beta, int turn)
 			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
-		Role opponent = null;
-		for (Role r: getStateMachine().getRoles()) {
-			if (!r.equals(role)) {
-				opponent = r;
+		if (getStateMachine().isTerminal(state)) {
+			int goal = getStateMachine().getGoal(state, role);
+			if(goal >= 100) {
+				foundWin = true;
 			}
+			return goal;
 		}
-		List<Move> actions = getStateMachine().getLegalMoves(state, opponent);
-//		int score = 100;
+		if(System.currentTimeMillis() - start > maxTime * 0.8) {
+			if(foundWin) {
+				return 0;
+			}
+			int goalScore = goalProximityHeuristic(role, state);
+			int mobilityScore = mobilityHeuristic(role, state);
+			return goalScore + mobilityScore - (int)(0.5*opponentHeuristic(role, state));
+		}
+		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		for (int i = 0; i < actions.size(); i++) {
-			List<Move> moves;
-			if (role.equals(getStateMachine().getRoles().get(0))) {
-				moves = Arrays.asList(action, actions.get(i));
-			} else {
-				moves = Arrays.asList(actions.get(i), action);
-			}
-			MachineState newState = getStateMachine().getNextState(state, moves);
-			int result = maxScore(role, newState,alpha,beta);
-			beta = Math.min(beta, result);
-			if (beta <= alpha) {
-				return alpha;
+			List<List<Move>> jointActions = getStateMachine().getLegalJointMoves(state, role, actions.get(i));
+			for (int j = 0; j < jointActions.size(); j++) {
+				List<Move> moves = jointActions.get(j);
+				MachineState newState = getStateMachine().getNextState(state, moves);
+				int result;
+				if (turn == getStateMachine().getRoles().size() - 1) {
+					result = maxScore(role, newState, alpha, beta);
+				} else {
+					result = minScore(role, newState, alpha, beta, turn + 1);
+				}
+				beta = Math.min(beta, result);
+				if (beta <= alpha) {
+					return alpha;
+				}
 			}
 		}
-//		return score;
 		return beta;
 	}
 
@@ -126,25 +135,30 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
 			int goal = getStateMachine().getGoal(state, role);
-			if(goal >= 100) foundWin = true;
+			if(goal >= 100) {
+				foundWin = true;
+			}
 			return goal;
 		}
-		if(System.currentTimeMillis() - start > maxTime*0.8) {
-			if(foundWin) return 0;
+		if(System.currentTimeMillis() - start > maxTime * 0.8) {
+			if(foundWin) {
+				return 0;
+			}
 			int goalScore = goalProximityHeuristic(role, state);
 			int mobilityScore = mobilityHeuristic(role, state);
 			return goalScore + mobilityScore - (int)(0.5*opponentHeuristic(role, state));
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
-		//int score = 0;
 		for (int i = 0; i < actions.size(); i++) {
-			int result = minScore(role, actions.get(i), state,alpha,beta);
-//			if (result > score) {
-//				score = result;
-//			}
-			alpha = Math.max(alpha, result);
-			if (alpha >= beta) {
-				return beta;
+			List<List<Move>> jointActions = getStateMachine().getLegalJointMoves(state, role, actions.get(i));
+			for (int j = 0; j < jointActions.size(); j++) {
+				List<Move> moves = jointActions.get(j);
+				MachineState newState = getStateMachine().getNextState(state, moves);
+				int result = minScore(role, newState, alpha, beta, 1);
+				alpha = Math.max(alpha, result);
+				if (alpha >= beta) {
+					return beta;
+				}
 			}
 		}
 		return alpha;
@@ -171,16 +185,22 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	}
 
 	private Move selectMoveAlphabeta(List<Move> actions) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
-		Move selection = actions.get(0);
 		int score = 0;
+		int turn = 1;
+		Move selection = actions.get(0);
 		for (int i = 0; i < actions.size(); i++) {
-			int result = minScore(getRole(), actions.get(i), getCurrentState(),0,100);
-			if (result == 100) {
-				return actions.get(i);
-			}
-			if (result > score) {
-				score = result;
-				selection = actions.get(i);
+			List<List<Move>> jointActions = getStateMachine().getLegalJointMoves(getCurrentState(), getRole(), actions.get(i));
+			for (int j = 0; j < jointActions.size(); j++) {
+				List<Move> moves = jointActions.get(j);
+				MachineState newState = getStateMachine().getNextState(getCurrentState(), moves);
+				int result = minScore(getRole(), newState, 0, 100, turn);
+				if (result == 100) {
+					return actions.get(i);
+				}
+				if (result > score) {
+					score = result;
+					selection = actions.get(i);
+				}
 			}
 		}
 		return selection;

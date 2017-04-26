@@ -19,10 +19,34 @@ import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
 public class NotToWorryMasterGamer extends NotToWorryGamer {
 
+	private long start;
+	private long maxTime;
+	private boolean foundWin = false;
+
+	//-------------GENERAL HELPER METHODS
+	private int mobilityHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException{
+		//number of states reachable from this step
+		//go down into each one once, and add up all possible states
+		int possibleStates = getStateMachine().getNextStates(state).size();
+		return possibleStates;
+	}
+
+	private int goalProximityHeuristic(Role role, MachineState state) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException{
+		return getStateMachine().getGoal(state, role);
+	}
+
 	public int minScore(Role role, MachineState state, int alpha, int beta, int turn)
 			throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
-			return getStateMachine().getGoal(state, role);
+			int goal = getStateMachine().getGoal(state, role);
+			if(goal >= 100) {
+				foundWin = true;
+			}
+			return goal;
+		}
+		if(System.currentTimeMillis() - start > maxTime * 0.8) {
+			if(foundWin) return 0;
+			return goalProximityHeuristic(role, state) + mobilityHeuristic(role, state);
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		for (int i = 0; i < actions.size(); i++) {
@@ -48,7 +72,15 @@ public class NotToWorryMasterGamer extends NotToWorryGamer {
 	public int maxScore(Role role, MachineState state, int alpha, int beta)
 			throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
-			return getStateMachine().getGoal(state, role);
+			int goal = getStateMachine().getGoal(state, role);
+			if(goal >= 100) {
+				foundWin = true;
+			}
+			return goal;
+		}
+		if(System.currentTimeMillis() - start > maxTime * 0.8) {
+			if(foundWin) return 0;
+			return goalProximityHeuristic(role, state) + mobilityHeuristic(role, state);
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		for (int i = 0; i < actions.size(); i++) {
@@ -70,7 +102,8 @@ public class NotToWorryMasterGamer extends NotToWorryGamer {
 	public Move stateMachineSelectMove(long timeout)
 			throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
 
-		long start = System.currentTimeMillis();
+		start = System.currentTimeMillis();
+		maxTime = getMatch().getPlayClock()*1000;
 
 		int turn = 1;
 		List<Move> actions = getStateMachine().getLegalMoves(getCurrentState(), getRole());

@@ -25,8 +25,20 @@ public class NotToWorryMonteCarloPlayer extends NotToWorryGamer {
 	private int maxTime;
 	private boolean foundWin = false;
 	private int totalMobility;
+	private int depthLimit = 3; //hard-coded for now
+	private int probeCount = 4; //hard-coded for now
 	private Random rand = new Random();
 	public static final double timeoutBuffer = 0.7;
+
+	private class StateLevel {
+		private MachineState state;
+		private int depth;
+
+		public StateLevel(MachineState s, int d) {
+			this.state = s;
+			this.depth = d;
+		}
+	}
 
 	//-------------GENERAL HELPER METHODS
 	private int totalMobilityHeuristic() throws MoveDefinitionException, TransitionDefinitionException {
@@ -74,33 +86,35 @@ public class NotToWorryMonteCarloPlayer extends NotToWorryGamer {
 		return opponentMaxScore;
 	}
 
-	//smart gamer selects a method to use depending on number of gamers
-
 	//-------------METHODS FOR USE WITH SPECIFIC GAMERS
-	private int findStateUtility(ArrayList<MachineState> queue, Role r) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
+	private int findStateUtility(ArrayList<StateLevel> queue, Role r) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		StateMachine mach = getStateMachine();
 		int stateUtility = -1;
 		List<Move> singleMove = new ArrayList<Move>();
 		while(queue.size() != 0) {
-			MachineState curr = queue.remove(0);
+			StateLevel curr = queue.remove(0);
 			//if time clocks down calculate heuristic
 			if(System.currentTimeMillis() - start > maxTime*timeoutBuffer) {
 				if(foundWin) return 0;
-				int goalScore = goalProximityHeuristic(r, curr);
-				int mobilityScore = mobilityHeuristic(r, curr);
+				int goalScore = goalProximityHeuristic(r, curr.state);
+				int mobilityScore = mobilityHeuristic(r, curr.state);
 				return goalScore + mobilityScore;
 			}
 
-			if(mach.isTerminal(curr)) {
-				int finalScore = mach.getGoal(curr, r);
+			if(mach.isTerminal(curr.state)) {
+				int finalScore = mach.getGoal(curr.state, r);
 				if(finalScore == 100) return 100;
 				else if (finalScore > stateUtility) stateUtility = finalScore;
 			} else {
-				List<Move> moves = mach.getLegalMoves(curr, r);
+				List<Move> moves = mach.getLegalMoves(curr.state, r);
 				for(Move m: moves) {
 					singleMove.add(m);
-					MachineState nextState = mach.getNextState(curr, singleMove);
-					queue.add(nextState);
+					MachineState nextState = mach.getNextState(curr.state, singleMove);
+					if(curr.depth >= depthLimit) { //if depth is >= limit, then use monte carlo
+						return monteCarloUtility(r, nextState, probeCount);
+					}
+					StateLevel nextStateLevel = new StateLevel(nextState, curr.depth+1); //increment depth by 1, create new state
+					queue.add(nextStateLevel);
 					singleMove.clear();
 				}
 			}
@@ -210,11 +224,12 @@ public class NotToWorryMonteCarloPlayer extends NotToWorryGamer {
 		StateMachine mach = getStateMachine();
 		int maxUtility = -1;
 		for(Move m: moves) {
-			ArrayList<MachineState> queue = new ArrayList<MachineState>();
+			ArrayList<StateLevel> queue = new ArrayList<StateLevel>();
 			ArrayList<Move> singleMove = new ArrayList<Move>();
 			singleMove.add(m);
 			MachineState nextState = mach.getNextState(getCurrentState(), singleMove);
-			queue.add(nextState);
+			StateLevel nextStateLevel = new StateLevel(nextState, 0);
+			queue.add(nextStateLevel);
 			int stateUtility = findStateUtility(queue, getRole());
 			if(stateUtility == 100) return m;
 			else if(stateUtility > maxUtility) {

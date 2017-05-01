@@ -24,6 +24,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private int maxTime;
 	private boolean foundWin = false;
 	private int totalMobility;
+	private int compulsiveDepthLimit = 2;
 	public static final double timeoutBuffer = 0.7;
 
 	//-------------GENERAL HELPER METHODS

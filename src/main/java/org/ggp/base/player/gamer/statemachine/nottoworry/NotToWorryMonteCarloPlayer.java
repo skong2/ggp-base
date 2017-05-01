@@ -25,7 +25,7 @@ public class NotToWorryMonteCarloPlayer extends NotToWorryGamer {
 	private int maxTime;
 	private boolean foundWin = false;
 	private int totalMobility;
-	private int depthLimit = 3; //hard-coded for now
+	private int depthLimit = 5; //hard-coded for now
 	private int probeCount = 4; //hard-coded for now
 	private Random rand = new Random();
 	public static final double timeoutBuffer = 0.7;
@@ -111,10 +111,12 @@ public class NotToWorryMonteCarloPlayer extends NotToWorryGamer {
 					singleMove.add(m);
 					MachineState nextState = mach.getNextState(curr.state, singleMove);
 					if(curr.depth >= depthLimit) { //if depth is >= limit, then use monte carlo
-						return monteCarloUtility(r, nextState, probeCount);
+						int monteCarloMobility = monteCarloUtility(r, nextState, probeCount);
+						if(monteCarloMobility > stateUtility) stateUtility = monteCarloMobility;
+					} else {
+						StateLevel nextStateLevel = new StateLevel(nextState, curr.depth+1); //increment depth by 1, create new state
+						queue.add(nextStateLevel);
 					}
-					StateLevel nextStateLevel = new StateLevel(nextState, curr.depth+1); //increment depth by 1, create new state
-					queue.add(nextStateLevel);
 					singleMove.clear();
 				}
 			}

@@ -25,7 +25,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private int maxTime;
 	private boolean foundWin = false;
 	private int totalMobility;
-	private int depthLimit = 5; //hard-coded for now
+	private int depthLimit = 4; //hard-coded for now
 	private int probeCount = 4; //hard-coded for now
 	private Random rand = new Random();
 	public static final double timeoutBuffer = 0.7;
@@ -155,7 +155,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			}
 			return goal;
 		}
-		else if(System.currentTimeMillis() - start > maxTime * timeoutBuffer) {
+		else if(System.currentTimeMillis() - start > maxTime * timeoutBuffer || depth >= levels) {
 			if(foundWin) {
 				return 0;
 			}
@@ -173,7 +173,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 				if (turn == getStateMachine().getRoles().size() - 1) {
 					result = maxScore(role, newState, alpha, beta, depth + 1, levels, count);
 				} else {
-					result = minScore(role, newState, alpha, beta, turn + 1, depth, levels, count);
+					result = minScore(role, newState, alpha, beta, turn + 1, depth + 1, levels, count);
 				}
 				beta = Math.min(beta, result);
 				if (beta <= alpha) {
@@ -202,7 +202,8 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			return goalScore + mobilityScore - opponentHeuristic(role, state);
 		}
 		else if (depth == levels) {
-			return monteCarloUtility(role, state, count);
+			if(levels == depthLimit) return monteCarloUtility(role, state, count);
+			else return 0;
 		}
 		List<Move> actions = getStateMachine().getLegalMoves(state, role);
 		for (int i = 0; i < actions.size(); i++) {
@@ -245,23 +246,27 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private Move selectMoveAlphabeta(List<Move> actions) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
 		int score = 0;
 		int turn = 1;
+		int levels = 1;
 		Move selection = actions.get(0);
-		for (int i = 0; i < actions.size(); i++) {
-			List<List<Move>> jointActions = getStateMachine().getLegalJointMoves(getCurrentState(), getRole(), actions.get(i));
-			for (int j = 0; j < jointActions.size(); j++) {
-				List<Move> moves = jointActions.get(j);
-				MachineState newState = getStateMachine().getNextState(getCurrentState(), moves);
-				int levels = 4;
-				int count = 4;
-				int result = minScore(getRole(), newState, 0, 100, turn, 0, levels, count);
-				if (result == 100) {
-					return actions.get(i);
-				}
-				if (result > score) {
-					score = result;
-					selection = actions.get(i);
+		while(levels <= depthLimit){
+			for (int i = 0; i < actions.size(); i++) {
+				List<List<Move>> jointActions = getStateMachine().getLegalJointMoves(getCurrentState(), getRole(), actions.get(i));
+				for (int j = 0; j < jointActions.size(); j++) {
+					List<Move> moves = jointActions.get(j);
+					MachineState newState = getStateMachine().getNextState(getCurrentState(), moves);
+					//				int levels = 4;
+					int count = 4;
+					int result = minScore(getRole(), newState, 0, 100, turn, 0, levels, count);
+					if (result == 100) {
+						return actions.get(i);
+					}
+					if (result > score) {
+						score = result;
+						selection = actions.get(i);
+					}
 				}
 			}
+			levels++;
 		}
 		return selection;
 	}
@@ -289,7 +294,9 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		Move selection = null;
 		if(roles.size() > 1) {
 			//use alphabeta gamer
-			selection = selectMoveAlphabeta(moves);
+			//selection = selectMoveIterativeDeep(moves);
+//			selection = selectMoveAlphabeta(moves);
+			selection = selectIterative(moves);
 		} else if (roles.size() == 1) {
 			//use compulsive deliberater
 			selection = selectMoveCompulsiveDeliberater(moves);
@@ -308,6 +315,38 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		notifyObservers(new GamerSelectedMoveEvent(moves, selection, stop - start));
 		return selection;
 	}
+
+
+	private Move selectIterative(List<Move> actions)
+			throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
+		// TODO Auto-generated method stub
+		int score = 0;
+		int turn = 1;
+		int levels = 1;
+		Move selection = actions.get(0);
+		while(levels <= depthLimit){
+			for (int i = 0; i < actions.size(); i++) {
+				List<List<Move>> jointActions = getStateMachine().getLegalJointMoves(getCurrentState(), getRole(), actions.get(i));
+				for (int j = 0; j < jointActions.size(); j++) {
+					List<Move> moves = jointActions.get(j);
+					MachineState newState = getStateMachine().getNextState(getCurrentState(), moves);
+					//				int levels = 4;
+					int count = 4;
+					int result = minScore(getRole(), newState, 0, 100, turn, 0, levels, count);
+					if (result == 100) {
+						return actions.get(i);
+					}
+					if (result > score) {
+						score = result;
+						selection = actions.get(i);
+					}
+				}
+			}
+			levels++;
+		}
+		return selection;
+	}
+
 
 	@Override
 	public void stateMachineMetaGame(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException

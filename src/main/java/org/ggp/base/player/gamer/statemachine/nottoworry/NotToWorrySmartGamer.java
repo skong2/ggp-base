@@ -25,10 +25,14 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private int maxTime;
 	private boolean foundWin = false;
 	private int totalMobility;
-	private int depthLimit = 4; //hard-coded for now
+	private int depthLimit = 2; //hard-coded for now
 	private int probeCount = 4; //hard-coded for now
 	private Random rand = new Random();
 	public static final double timeoutBuffer = 0.7;
+
+	public boolean timeout() {
+		return System.currentTimeMillis() - start > maxTime * timeoutBuffer;
+	}
 
 	private class StateLevel {
 		private MachineState state;
@@ -38,6 +42,83 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			this.state = s;
 			this.depth = d;
 		}
+	}
+
+	public class TreeNode {
+		public int visits = 0;
+		public double utility = 0;
+		public MachineState state = null;
+		public TreeNode parent = null;
+		public Move conception = null;
+
+		public ArrayList<TreeNode> children = null;
+
+		public TreeNode(TreeNode parent, MachineState state, Move move) {
+			this.parent = parent;
+			this.state = state;
+			this.children = new ArrayList<TreeNode>();
+			this.conception = move;
+		}
+	}
+
+	public TreeNode selectNode(TreeNode node){
+		if(node.visits == 0) return node;
+		double score = 0;
+		TreeNode result = node;
+		if(node.children.size() == 0) return node;
+		for(int i = 0; i < node.children.size(); i++) {
+			if(node.children.get(i).visits==0){
+				return node.children.get(i);
+			}
+		}
+		for(int i = 0; i < node.children.size(); i++) {
+			TreeNode child = node.children.get(i);
+			double newScore = child.utility/child.visits+Math.sqrt(2*Math.log(child.parent.visits)/child.visits);
+			if(newScore > score) {
+				score = newScore;
+				result = child;
+			}
+		}
+		return selectNode(result);
+	}
+
+	public boolean expand(TreeNode node) throws MoveDefinitionException, TransitionDefinitionException{
+		for(Move move : getStateMachine().getLegalMoves(node.state, getRole())) {
+			List<List<Move>> actions = getStateMachine().getLegalJointMoves(node.state, getRole(), move);
+			for(int i = 0; i < actions.size(); i++) {
+				if(getStateMachine().isTerminal(node.state)) continue;
+				MachineState newState = getStateMachine().getNextState(node.state, actions.get(i));
+				TreeNode newNode = new TreeNode(node, newState, move);
+				node.children.add(newNode);
+			}
+		}
+		return true;
+	}
+
+	public boolean backpropagate(TreeNode node, double score) {
+		node.visits++;
+		node.utility = node.utility + score;
+		if(node.parent != null) backpropagate(node.parent, score);
+		return true;
+	}
+
+	public Move selectMCTS(List<Move> moves) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
+		TreeNode root = new TreeNode(null, getCurrentState(), null);
+		while(!timeout()) {
+			TreeNode node = selectNode(root);
+			expand(node);
+			double utility = monteCarloUtility(getRole(), node.state, probeCount);
+			backpropagate(node, utility);
+		}
+		Move move = null;
+		double maxUtility = Double.MIN_VALUE;
+		for (TreeNode node : root.children) {
+			if (node.utility > maxUtility) {
+				maxUtility = node.utility;
+				move = node.conception;
+			}
+		}
+		return move;
 	}
 
 	//-------------GENERAL HELPER METHODS
@@ -126,8 +207,10 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 
 	private int monteCarloDepthCharge(Role role, MachineState state) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
+			System.out.println(getStateMachine().getGoal(state, role));
 			return getStateMachine().getGoal(state, role);
 		}
+		System.out.println("Not terminal state");
 		ArrayList<Move> moves = new ArrayList<Move>();
 		for (int i = 0; i < getStateMachine().getRoles().size(); i++) {
 			List<Move> options = getStateMachine().getLegalMoves(state, getStateMachine().getRoles().get(i));
@@ -292,11 +375,20 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		totalMobility = totalMobilityHeuristic();
 		Collections.shuffle(moves);
 		Move selection = null;
+
+		if (moves.size() == 1) {
+			selection = moves.get(0);
+			long stop = System.currentTimeMillis();
+			notifyObservers(new GamerSelectedMoveEvent(moves, selection, stop - start));
+			return selection;
+		}
+
 		if(roles.size() > 1) {
 			//use alphabeta gamer
 			//selection = selectMoveIterativeDeep(moves);
-//			selection = selectMoveAlphabeta(moves);
-			selection = selectIterative(moves);
+			//selection = selectMoveAlphabeta(moves);
+			//selection = selectIterative(moves);
+			selection = selectMCTS(moves);
 		} else if (roles.size() == 1) {
 			//use compulsive deliberater
 			selection = selectMoveCompulsiveDeliberater(moves);

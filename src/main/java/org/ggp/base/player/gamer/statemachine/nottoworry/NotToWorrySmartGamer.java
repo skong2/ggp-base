@@ -18,7 +18,6 @@ import org.ggp.base.util.statemachine.cache.CachedStateMachine;
 import org.ggp.base.util.statemachine.exceptions.GoalDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
 import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
-import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 
 public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private long start;
@@ -454,7 +453,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	// This is the default State Machine
 	@Override
 	public StateMachine getInitialStateMachine() {
-		return new CachedStateMachine(new ProverStateMachine());
+		return new CachedStateMachine(new NotToWorryPropnetStateMachine());
 	}
 
 	// This is the defaul Sample Panel

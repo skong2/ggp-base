@@ -13,6 +13,9 @@ import org.ggp.base.util.gdl.grammar.GdlRelation;
 import org.ggp.base.util.gdl.grammar.GdlSentence;
 import org.ggp.base.util.propnet.architecture.Component;
 import org.ggp.base.util.propnet.architecture.PropNet;
+import org.ggp.base.util.propnet.architecture.components.And;
+import org.ggp.base.util.propnet.architecture.components.Not;
+import org.ggp.base.util.propnet.architecture.components.Or;
 import org.ggp.base.util.propnet.architecture.components.Proposition;
 import org.ggp.base.util.propnet.factory.OptimizingPropNetFactory;
 import org.ggp.base.util.statemachine.MachineState;
@@ -61,15 +64,56 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return true;
     }
 
-//    function markactions (vector,propnet)
-//    {var props = propnet.actions;
-//     for (var i=0; i<props.length; i++)
-//         {props[i].mark = vector[i]};
-//     return true}
-
     public boolean markActions(MachineState state) {
     	//get list of moves possible from current state
+    	Set<GdlSentence> gdls = state.getContents();
+    	Map<GdlSentence, Proposition> actions = propNet.getInputPropositions();
+    	for (GdlSentence gdl : gdls) {
+    		Proposition prop = actions.get(gdl);
+    		if (prop != null) {
+        		prop.setValue(true);
+    		}
+    	}
 		return true;
+    }
+
+    public boolean clearPropnet() {
+    	Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
+    	for (Proposition prop : bases.values()) {
+    		prop.setValue(false);
+    	}
+    	return true;
+    }
+
+//    function propmarkp (p)
+//    {if (p.type=='base') {return p.mark};
+//     if (p.type=='input') {return p.mark};
+//     if (p.type=='view') {return propmarkp(p.source)};
+//     if (p.type=='negation') {return propmarknegation(p)};
+//     if (p.type=='conjunction') {return propmarkconjunction(p)};
+//     if (p.type=='disjunction') {return propmarkdisjunction(p)};
+//     return false}
+
+    public boolean propMark(Proposition p) {
+    	if (propNet.getBasePropositions().containsKey(p.getName())) {
+    		return p.getValue();
+    	}
+    	if (propNet.getInputPropositions().containsKey(p.getName())) {
+    		return p.getValue();
+    	}
+    	//conjunction
+    	if ((Component) p instanceof And) {
+
+    	}
+    	//negation
+    	if ((Component) p instanceof Not) {
+
+    	}
+    	//disjunction
+    	if ((Component) p instanceof Or) {
+
+    	}
+    	return propMark((Proposition) p.getSingleInput());
     }
 
     /**
@@ -79,7 +123,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public boolean isTerminal(MachineState state) {
         // TODO: Compute whether the MachineState is terminal.
-        return false;
+    	return true;
     }
 
     /**

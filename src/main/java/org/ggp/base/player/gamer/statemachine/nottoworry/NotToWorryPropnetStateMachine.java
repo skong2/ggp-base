@@ -103,15 +103,15 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	}
     	//conjunction
     	if ((Component) p instanceof And) {
-
+    		return propMarkConjunction(p);
     	}
     	//negation
     	if ((Component) p instanceof Not) {
-
+    		return propmarkNegation(p);
     	}
     	//disjunction
     	if ((Component) p instanceof Or) {
-
+    		return propMarkDisjunction(p);
     	}
     	return propMark((Proposition) p.getSingleInput());
     }
@@ -174,18 +174,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return nexts;
     }
 
-//    function propnext (move,state,propnet)
-//    {markactions(move,propnet);
-//     markbases(state,propnet);
-//     var bases = propnet.bases;
-//     var nexts = seq();
-//     for (var i=0; i<bases.length; i++)
-//         {nexts[i] = propmarkp(bases[i].source.source)};
-//     return nexts}
-
-
-
-    public Proposition propReward(Role role,MachineState state) {
+    public Proposition propReward(MachineState state, Role role) {
     	markBases(state);
     	Map<Role, Set<Proposition>> rewardsMap = propNet.getGoalPropositions();
     	Set<Proposition> rewards = new HashSet<Proposition>();
@@ -208,17 +197,13 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return propMark(propNet.getTerminalProposition());
     }
 
-
-
-
     /**
      * Computes if the state is terminal. Should return the value
      * of the terminal proposition for the state.
      */
     @Override
     public boolean isTerminal(MachineState state) {
-        // TODO: Compute whether the MachineState is terminal.
-    	return true;
+    	return propTerminal(state);
     }
 
     /**
@@ -231,8 +216,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public int getGoal(MachineState state, Role role)
             throws GoalDefinitionException {
-        // TODO: Compute the goal for role in state.
-        return -1;
+    	return 0;
     }
 
     /**
@@ -242,7 +226,9 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
      */
     @Override
     public MachineState getInitialState() {
-        // TODO: Compute the initial state.
+    	Proposition initial = propNet.getInitProposition();
+    	initial.setValue(true);
+    	// not complete
         return null;
     }
 

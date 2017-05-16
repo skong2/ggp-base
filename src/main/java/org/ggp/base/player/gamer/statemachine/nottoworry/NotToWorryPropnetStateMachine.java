@@ -116,6 +116,101 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return propMark((Proposition) p.getSingleInput());
     }
 
+    public boolean propmarkNegation (Proposition p) {
+    	return !propMark((Proposition)p.getSingleInput());
+    }
+
+    public boolean propMarkConjunction (Proposition p) {
+    	Set<Component> sources = p.getInputs();
+    	for (Component component : sources) {
+    		if (!propMark((Proposition)component)) {
+    			return false;
+    		}
+    	}
+    	return true;
+    }
+
+    public boolean propMarkDisjunction (Proposition p) {
+    	Set<Component> sources = p.getInputs();
+    	for (Component component : sources) {
+    		if (propMark((Proposition)component)) {
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+
+    public Set<Proposition> propLegals (Role role,MachineState state) {
+    	markBases(state);
+    	Set<Proposition> legals = new HashSet<Proposition>();
+    	Map<Role,Set<Proposition>> propMap = propNet.getLegalPropositions();
+    	for (Role r : roles) {
+    		if(role == r) {
+    			legals = propMap.get(r);
+    			break;
+    		}
+    	}
+    	Set<Proposition> actions = new HashSet<Proposition>();
+    	for (Proposition p : legals) {
+    		if (propMark(p)) {
+    			actions.add(p);
+    		}
+    	}
+    	return actions;
+    }
+
+    //TODO: Check return type and overall functionality of this function
+    public Set<Proposition> propNext(Move move, MachineState state) {
+    	markActions(state);
+    	markBases(state);
+    	Map<GdlSentence,Proposition> bases = propNet.getBasePropositions();
+    	Set<Proposition> nexts = new HashSet<Proposition>();
+    	for (Proposition p : bases.values()) {
+    		if (propMark(p)) {
+    			nexts.add(p);
+    		}
+
+    	}
+    	return nexts;
+    }
+
+//    function propnext (move,state,propnet)
+//    {markactions(move,propnet);
+//     markbases(state,propnet);
+//     var bases = propnet.bases;
+//     var nexts = seq();
+//     for (var i=0; i<bases.length; i++)
+//         {nexts[i] = propmarkp(bases[i].source.source)};
+//     return nexts}
+
+
+
+    public Proposition propReward(Role role,MachineState state) {
+    	markBases(state);
+    	Map<Role, Set<Proposition>> rewardsMap = propNet.getGoalPropositions();
+    	Set<Proposition> rewards = new HashSet<Proposition>();
+    	for (Role r :roles) {
+    		if (role == r) {
+    			rewards = rewardsMap.get(r);
+    			break;
+    		}
+    	}
+    	for (Proposition reward : rewards) {
+    		if (propMark(reward)) {
+    			return reward;
+    		}
+    	}
+    	return null;
+    }
+
+    public boolean propTerminal (MachineState state) {
+    	markBases(state);
+    	return propMark(propNet.getTerminalProposition());
+    }
+
+
+
+
     /**
      * Computes if the state is terminal. Should return the value
      * of the terminal proposition for the state.

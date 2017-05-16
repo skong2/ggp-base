@@ -174,7 +174,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return nexts;
     }
 
-    public Proposition propReward(MachineState state, Role role) {
+    public int propReward(MachineState state, Role role) {
     	markBases(state);
     	Map<Role, Set<Proposition>> rewardsMap = propNet.getGoalPropositions();
     	Set<Proposition> rewards = new HashSet<Proposition>();
@@ -186,10 +186,10 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	}
     	for (Proposition reward : rewards) {
     		if (propMark(reward)) {
-    			return reward;
+    			return getGoalValue(reward);
     		}
     	}
-    	return null;
+    	return 0;
     }
 
     public boolean propTerminal (MachineState state) {
@@ -216,7 +216,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public int getGoal(MachineState state, Role role)
             throws GoalDefinitionException {
-    	return 0;
+    	return propReward(state, role);
     }
 
     /**
@@ -228,8 +228,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     public MachineState getInitialState() {
     	Proposition initial = propNet.getInitProposition();
     	initial.setValue(true);
-    	// not complete
-        return null;
+    	return getStateFromBase();
     }
 
     /**

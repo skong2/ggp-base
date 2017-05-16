@@ -238,8 +238,12 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public List<Move> findActions(Role role)
             throws MoveDefinitionException {
-        // TODO: Compute legal moves.
-        return null;
+        Map<Role, Set<Proposition>> legals = propNet.getLegalPropositions();
+        List<Move> moves = new ArrayList<Move>();
+        for (Proposition legal : legals.get(role)) {
+        	moves.add(getMoveFromProposition(legal));
+        }
+        return moves;
     }
 
     /**

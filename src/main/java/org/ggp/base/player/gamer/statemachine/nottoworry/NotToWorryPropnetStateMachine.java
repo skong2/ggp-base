@@ -49,6 +49,29 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         }
     }
 
+    public boolean markBases(MachineState state) {
+    	Set<GdlSentence> gdls = state.getContents();
+    	Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
+    	for (GdlSentence gdl : gdls) {
+    		Proposition prop = bases.get(gdl);
+    		if (prop != null) {
+        		prop.setValue(true);
+    		}
+    	}
+    	return true;
+    }
+
+//    function markactions (vector,propnet)
+//    {var props = propnet.actions;
+//     for (var i=0; i<props.length; i++)
+//         {props[i].mark = vector[i]};
+//     return true}
+
+    public boolean markActions(MachineState state) {
+    	//get list of moves possible from current state
+		return true;
+    }
+
     /**
      * Computes if the state is terminal. Should return the value
      * of the terminal proposition for the state.

@@ -37,6 +37,9 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     /** The player roles */
     private List<Role> roles;
 
+    private Map<GdlSentence, Proposition> bases;
+    private Map<GdlSentence, Proposition> actions;
+
     /**
      * Initializes the PropNetStateMachine. You should compute the topological
      * ordering here. Additionally you may compute the initial state here, at
@@ -47,6 +50,8 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         try {
             propNet = OptimizingPropNetFactory.create(description);
             roles = propNet.getRoles();
+            bases = propNet.getBasePropositions();
+        	actions = propNet.getInputPropositions();
             ordering = getOrdering();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -55,11 +60,12 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
 
     public boolean markBases(MachineState state) {
     	Set<GdlSentence> gdls = state.getContents();
-    	Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
+        bases = propNet.getBasePropositions();
     	for (GdlSentence gdl : gdls) {
     		Proposition prop = bases.get(gdl);
     		if (prop != null) {
         		prop.setValue(true);
+        		bases.put(gdl, prop);
     		}
     	}
     	return true;
@@ -68,18 +74,18 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     public boolean markActions(MachineState state) {
     	//get list of moves possible from current state
     	Set<GdlSentence> gdls = state.getContents();
-    	Map<GdlSentence, Proposition> actions = propNet.getInputPropositions();
+    	actions = propNet.getInputPropositions();
     	for (GdlSentence gdl : gdls) {
     		Proposition prop = actions.get(gdl);
     		if (prop != null) {
         		prop.setValue(true);
+        		actions.put(gdl, prop);
     		}
     	}
 		return true;
     }
 
     public boolean clearPropnet() {
-    	Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
     	for (Proposition prop : bases.values()) {
     		prop.setValue(false);
     	}
@@ -96,21 +102,23 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
 //     return false}
 
     public boolean propMark(Proposition p) {
-    	if (propNet.getBasePropositions().containsKey(p.getName())) {
+    	//if p is a base
+    	if (bases.containsKey(p.getName())) {
     		return p.getValue();
     	}
-    	if (propNet.getInputPropositions().containsKey(p.getName())) {
+    	//if p is an action
+    	if (actions.containsKey(p.getName())) {
     		return p.getValue();
     	}
-    	//conjunction
+    	//if p is a conjunction
     	if ((Component) p instanceof And) {
     		return propMarkConjunction(p);
     	}
-    	//negation
+    	//if p is a negation
     	if ((Component) p instanceof Not) {
     		return propmarkNegation(p);
     	}
-    	//disjunction
+    	//if p is a disjunction
     	if ((Component) p instanceof Or) {
     		return propMarkDisjunction(p);
     	}

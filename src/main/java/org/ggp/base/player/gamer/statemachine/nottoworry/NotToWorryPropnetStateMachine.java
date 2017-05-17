@@ -156,9 +156,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	markBases(state);
     	Set<Proposition> nexts = new HashSet<Proposition>();
     	for (Proposition p : bases.values()) {
-    		if (propMark(p)) {
-    			nexts.add(p);
-    		}
+    		nexts.add((Proposition) p.getSingleInput().getSingleInput());
 
     	}
     	return nexts;
@@ -263,6 +261,10 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     			p.setValue(propMark(p));
     		}
     	}
+    	Set<GdlSentence> contents = new Set<GdlSentence>();
+    	for (Proposition p : ordering) {
+
+    	}
         return state;
     }
 
@@ -285,7 +287,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     		unvisited.remove(c);
     		if(c instanceof Proposition) order.add(0, (Proposition) c);
     	}
-    	return;
     }
 
     /**
@@ -326,7 +327,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         	Component selection = (Component) unvisited.keySet().toArray()[0];
         	visitTopological(selection, bases, actions);
         }
-
+        System.out.println(order);
         return new LinkedList<Proposition>(order);
     }
 

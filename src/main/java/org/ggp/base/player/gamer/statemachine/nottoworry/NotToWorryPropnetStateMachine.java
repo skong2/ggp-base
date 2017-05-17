@@ -1,6 +1,7 @@
 package org.ggp.base.player.gamer.statemachine.nottoworry;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -286,6 +287,27 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         return null;
     }
 
+    public List<Proposition> order = new LinkedList<Proposition>();
+
+    public Map<Component, Boolean> visitTopological(Component c, Map<Component, Boolean> unvisited, Map<GdlSentence, Proposition> bases, Map<GdlSentence, Proposition> inputs) {
+    	if (unvisited.get(c)) {
+    		return unvisited;
+    	} else {
+    		unvisited.put(c, true);
+    		Set<Component> neighbors = c.getOutputs();
+
+    		for (Component neighbor : neighbors) {
+            	if (bases.values().contains(c) || inputs.values().contains(c)) {
+            		continue;
+            	}
+            	unvisited = visitTopological(neighbor, unvisited, bases, inputs);
+    		}
+    		unvisited.remove(c);
+    		order.add(0, (Proposition) c);
+    	}
+    	return unvisited;
+    }
+
     /**
      * This should compute the topological ordering of propositions.
      * Each component is either a proposition, logical gate, or transition.
@@ -304,7 +326,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
 	public List<Proposition> getOrdering()
     {
         // List to contain the topological ordering.
-        List<Proposition> order = new LinkedList<Proposition>();
+        order = new LinkedList<Proposition>();
 
         // All of the components in the PropNet
         List<Component> components = new ArrayList<Component>(propNet.getComponents());
@@ -312,9 +334,23 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         // All of the propositions in the PropNet.
         List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
 
-        // TODO: Compute the topological ordering.
+        Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
+        Map<GdlSentence, Proposition> inputs = propNet.getInputPropositions();
 
-        return order;
+        // 0 for unmarked, 1 for temp mark, remove for perm mark
+        Map<Component, Boolean> unvisited = new HashMap<Component, Boolean>();
+        for (Component c: components) {
+        	if (bases.values().contains(c) || inputs.values().contains(c)) {
+        		continue;
+        	}
+        	unvisited.put(c, false);
+        }
+        while (!unvisited.isEmpty()) {
+        	Component selection = (Component) unvisited.keySet().toArray()[0];
+        	unvisited = visitTopological(selection, unvisited, bases, inputs);
+        }
+
+        return new LinkedList<Proposition>(order);
     }
 
     /* Already implemented for you */

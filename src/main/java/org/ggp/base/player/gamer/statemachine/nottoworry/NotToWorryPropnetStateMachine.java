@@ -70,7 +70,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return true;
     }
 
-    // TODO: Fix to take in gdl sentence for input props to be marked as true
     public boolean markActions(MachineState state, List<Move> moves) {
     	//assume list of moves entered is in same order as list of roles from getRoles()
     	List<GdlSentence> doeses = toDoes(moves);

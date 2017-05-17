@@ -52,7 +52,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
             roles = propNet.getRoles();
             bases = propNet.getBasePropositions();
         	actions = propNet.getInputPropositions();
-            ordering = getOrdering();
+//            ordering = getOrdering();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -60,24 +60,25 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
 
     public boolean markBases(MachineState state) {
     	Set<GdlSentence> gdls = state.getContents();
-    	for (GdlSentence gdl : gdls) {
-    		Proposition prop = bases.get(gdl);
-    		if (prop != null) {
-        		prop.setValue(true);
-        		bases.put(gdl, prop);
+    	for (Proposition prop : bases.values()) {
+    		if (gdls.contains(prop.getName())) {
+    			prop.setValue(true);
+    		} else {
+    			prop.setValue(false);
     		}
     	}
     	return true;
     }
 
-
-    // TODO: Fix to take in gdl sentence for input props to be marked as true
     public boolean markActions(List<Move> moves) {
     	//assume list of moves entered is in same order as list of roles from getRoles()
     	List<GdlSentence> doeses = toDoes(moves);
-    	for(int i=0; i < roles.size(); i++) {
-    		Proposition action = actions.get(doeses.get(i));
-    		action.setValue(true);
+    	for (Proposition prop : actions.values()) {
+    		if (doeses.contains(prop.getName())) {
+    			prop.setValue(true);
+    		} else {
+    			prop.setValue(false);
+    		}
     	}
     	return true;
     }
@@ -181,8 +182,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
      */
     @Override
     public MachineState getInitialState() {
-    	Proposition initial = propNet.getInitProposition();
-    	initial.setValue(true);
+    	propNet.getInitProposition().setValue(true);
     	return getStateFromBase();
     }
 
@@ -207,7 +207,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     public List<Move> getLegalMoves(MachineState state, Role role)
             throws MoveDefinitionException {
     	markBases(state);
-    	List<Role> roles = propNet.getRoles();
     	Map<Role, Set<Proposition>> propMap = propNet.getLegalPropositions();
     	Set<Proposition> legals = propMap.get(role);
         List<Move> legalMoves = new ArrayList<Move>();
@@ -227,7 +226,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
             throws TransitionDefinitionException {
     	markActions(moves);
     	markBases(state);
-
         return getStateFromBase();
     }
 

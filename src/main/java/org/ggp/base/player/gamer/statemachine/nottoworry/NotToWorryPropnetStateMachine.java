@@ -70,6 +70,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return true;
     }
 
+    // TODO: Fix to take in gdl sentence for input props to be marked as true
     public boolean markActions(MachineState state) {
     	//get list of moves possible from current state
     	Set<GdlSentence> gdls = state.getContents();
@@ -151,7 +152,9 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return legalActions;
     }
 
+    // TODO: change to use better mark actions by passing in move or bool vec or whatever idk
     public Set<Proposition> propNext(Move move, MachineState state) {
+
     	markActions(state);
     	markBases(state);
     	Set<Proposition> nexts = new HashSet<Proposition>();
@@ -159,6 +162,8 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     		nexts.add((Proposition) p.getSingleInput().getSingleInput());
 
     	}
+
+//    	ProverQueryBuilder.toDoes(role move);
     	return nexts;
     }
 
@@ -241,11 +246,10 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
             throws MoveDefinitionException {
         Set<Proposition> legals = propLegals(role,state);
         List<Move> legalMoves = new ArrayList<Move>();
-
         for (Proposition p : legals) {
         	legalMoves.add(getMoveFromProposition(p));
-
         }
+        assert (legalMoves.size() > 0);
         return legalMoves;
     }
 
@@ -255,17 +259,17 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
-    	for (Move m : moves) {
-    		Set<Proposition> nexts = propNext(m,state);
-    		for (Proposition p : nexts) {
+    	Set<GdlSentence> doeses = new HashSet<GdlSentence>(toDoes(moves));
+    	for (GdlSentence gdl : doeses) {
+    		actions.get(gdl);
+    	}
+    	//TODO: FIX
+    	for (Proposition p : ordering) {
+    		if (doeses.contains(p.getName())) {
     			p.setValue(propMark(p));
     		}
     	}
-    	Set<GdlSentence> contents = new Set<GdlSentence>();
-    	for (Proposition p : ordering) {
-
-    	}
-        return state;
+        return getStateFromBase();
     }
 
     public List<Proposition> order = new LinkedList<Proposition>();
@@ -313,7 +317,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         List<Component> components = new ArrayList<Component>(propNet.getComponents());
 
         // All of the propositions in the PropNet.
-        List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
+//        List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
 
         // 0 for unmarked, 1 for temp mark, remove for perm mark
         unvisited = new HashMap<Component, Boolean>();
@@ -327,7 +331,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         	Component selection = (Component) unvisited.keySet().toArray()[0];
         	visitTopological(selection, bases, actions);
         }
-        System.out.println(order);
         return new LinkedList<Proposition>(order);
     }
 

@@ -266,7 +266,13 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
         // TODO: Compute the next state.
-        return null;
+    	for (Move m : moves) {
+    		Set<Proposition> nexts = propNext(m,state);
+    		for (Proposition p : nexts) {
+    			p.setValue(propMark(p));
+    		}
+    	}
+        return state;
     }
 
     /**

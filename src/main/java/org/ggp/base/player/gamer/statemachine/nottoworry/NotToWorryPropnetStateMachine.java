@@ -255,13 +255,30 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         return null;
     }
 
+
+//function propnext (move,state,propnet)
+// {markactions(move,propnet);
+//  markbases(state,propnet);
+//  var bases = propnet.bases;
+//  var nexts = seq();
+//  for (var i=0; i<bases.length; i++)
+//      {nexts[i] = propmarkp(bases[i].source.source)};
+//  return nexts}
+
     /**
      * Computes the next state given state and the list of moves.
      */
     @Override
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
-        // TODO: Compute the next state.
+        markActions(state);
+        markBases(state);
+    	Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
+    	Set<GdlSentence> contents = new HashSet<GdlSentence>();
+    	for (GdlSentence gdl : state.getContents()) {
+    		boolean propValue = propMark((Proposition) bases.get(gdl).getSingleInput().getSingleInput());
+    	}
+    	MachineState newState = new MachineState(contents);
         return null;
     }
 

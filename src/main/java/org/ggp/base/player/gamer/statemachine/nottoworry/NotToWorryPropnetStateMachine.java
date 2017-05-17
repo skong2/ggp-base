@@ -59,6 +59,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     }
 
     public boolean markBases(MachineState state) {
+    	Map<GdlSentence, Proposition> basesCopy = new HashMap<GdlSentence, Proposition>();
     	Set<GdlSentence> gdls = state.getContents();
     	for (Proposition prop : bases.values()) {
     		if (gdls.contains(prop.getName())) {
@@ -66,12 +67,20 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     		} else {
     			prop.setValue(false);
     		}
+    		basesCopy.put(prop.getName(), prop);
     	}
+//    	if (bases.equals(basesCopy)) {
+//    		System.out.println("theyre the same fuck");
+//    	} else {
+//    		System.out.println("Theyre different FUCK");
+//    	}
+    	bases = basesCopy;
     	return true;
     }
 
     public boolean markActions(List<Move> moves) {
     	//assume list of moves entered is in same order as list of roles from getRoles()
+    	Map<GdlSentence, Proposition> actionsCopy = new HashMap<GdlSentence, Proposition>();
     	List<GdlSentence> doeses = toDoes(moves);
     	for (Proposition prop : actions.values()) {
     		if (doeses.contains(prop.getName())) {
@@ -79,7 +88,14 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     		} else {
     			prop.setValue(false);
     		}
+    		actionsCopy.put(prop.getName(), prop);
     	}
+//    	if (actions.equals(actionsCopy)) {
+//    		System.out.println("theyre the same fuck");
+//    	} else {
+//    		System.out.println("Theyre different FUCK");
+//    	}
+    	actions = actionsCopy;
     	return true;
     }
 
@@ -160,13 +176,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
             throws GoalDefinitionException {
     	markBases(state);
     	Map<Role, Set<Proposition>> rewardsMap = propNet.getGoalPropositions();
-    	Set<Proposition> rewards = new HashSet<Proposition>();
-    	for (Role r :roles) {
-    		if (role == r) {
-    			rewards = rewardsMap.get(r);
-    			break;
-    		}
-    	}
+    	Set<Proposition> rewards = rewardsMap.get(role);
     	for (Proposition reward : rewards) {
     		if (propMark(reward)) {
     			return getGoalValue(reward);
@@ -184,6 +194,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     public MachineState getInitialState() {
     	propNet.getInitProposition().setValue(true);
     	return getStateFromBase();
+
     }
 
     /**
@@ -224,8 +235,10 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
+//    	System.out.println("before: " + getStateFromBase());
     	markActions(moves);
     	markBases(state);
+//    	System.out.println(getStateFromBase());
         return getStateFromBase();
     }
 

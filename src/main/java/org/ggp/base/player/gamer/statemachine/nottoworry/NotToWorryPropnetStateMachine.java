@@ -276,6 +276,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
+<<<<<<< HEAD
         markActions(state);
         markBases(state);
     	Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
@@ -285,6 +286,16 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	}
     	MachineState newState = new MachineState(contents);
         return null;
+=======
+        // TODO: Compute the next state.
+    	for (Move m : moves) {
+    		Set<Proposition> nexts = propNext(m,state);
+    		for (Proposition p : nexts) {
+    			p.setValue(propMark(p));
+    		}
+    	}
+        return state;
+>>>>>>> 0d2b04a5b4ed80fd7f728a3e60c76b5518d4ae0f
     }
 
     public List<Proposition> order = new LinkedList<Proposition>();

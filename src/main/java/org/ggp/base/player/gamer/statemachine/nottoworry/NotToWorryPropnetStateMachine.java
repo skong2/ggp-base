@@ -139,35 +139,26 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return false;
     }
 
-    public Set<Proposition> propLegals (Role role,MachineState state) {
+    /**
+     * Computes if the state is terminal. Should return the value
+     * of the terminal proposition for the state.
+     */
+    @Override
+    public boolean isTerminal(MachineState state) {
     	markBases(state);
-    	Map<Role,Set<Proposition>> propMap = propNet.getLegalPropositions();
-    	Set<Proposition> legals = propMap.get(role);
-    	Set<Proposition> legalActions = new HashSet<Proposition>();
-    	for (Proposition p : legals) {
-    		if (propMark(p)) {
-    			legalActions.add(p);
-    		}
-    	}
-    	return legalActions;
+    	return propMark(propNet.getTerminalProposition());
     }
 
-    // TODO: change to use better mark actions by passing in move or bool vec or whatever idk
-    public Set<Proposition> propNext(Move move, MachineState state) {
-
-    	markActions(state);
-    	markBases(state);
-    	Set<Proposition> nexts = new HashSet<Proposition>();
-    	for (Proposition p : bases.values()) {
-    		nexts.add((Proposition) p.getSingleInput().getSingleInput());
-
-    	}
-
-//    	ProverQueryBuilder.toDoes(role move);
-    	return nexts;
-    }
-
-    public int propReward(MachineState state, Role role) {
+    /**
+     * Computes the goal for a role in the current state.
+     * Should return the value of the goal proposition that
+     * is true for that role. If there is not exactly one goal
+     * proposition true for that role, then you should throw a
+     * GoalDefinitionException because the goal is ill-defined.
+     */
+    @Override
+    public int getGoal(MachineState state, Role role)
+            throws GoalDefinitionException {
     	markBases(state);
     	Map<Role, Set<Proposition>> rewardsMap = propNet.getGoalPropositions();
     	Set<Proposition> rewards = new HashSet<Proposition>();
@@ -183,33 +174,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     		}
     	}
     	return 0;
-    }
-
-    public boolean propTerminal (MachineState state) {
-    	markBases(state);
-    	return propMark(propNet.getTerminalProposition());
-    }
-
-    /**
-     * Computes if the state is terminal. Should return the value
-     * of the terminal proposition for the state.
-     */
-    @Override
-    public boolean isTerminal(MachineState state) {
-    	return propTerminal(state);
-    }
-
-    /**
-     * Computes the goal for a role in the current state.
-     * Should return the value of the goal proposition that
-     * is true for that role. If there is not exactly one goal
-     * proposition true for that role, then you should throw a
-     * GoalDefinitionException because the goal is ill-defined.
-     */
-    @Override
-    public int getGoal(MachineState state, Role role)
-            throws GoalDefinitionException {
-    	return propReward(state, role);
     }
 
     /**
@@ -228,7 +192,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
      * Computes all possible actions for role.
      */
     @Override
-    public List<Move> findActions(Role role)
+    public List<Move> findActions(Role role) //TODO: figure out why the f we have this
             throws MoveDefinitionException {
         Map<Role, Set<Proposition>> legals = propNet.getLegalPropositions();
         List<Move> moves = new ArrayList<Move>();
@@ -244,12 +208,16 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public List<Move> getLegalMoves(MachineState state, Role role)
             throws MoveDefinitionException {
-        Set<Proposition> legals = propLegals(role,state);
+    	markBases(state);
+    	List<Role> roles = propNet.getRoles();
+    	Map<Role, Set<Proposition>> propMap = propNet.getLegalPropositions();
+    	Set<Proposition> legals = propMap.get(role);
         List<Move> legalMoves = new ArrayList<Move>();
         for (Proposition p : legals) {
-        	legalMoves.add(getMoveFromProposition(p));
+        	if (propMark(p)) {
+        		legalMoves.add(getMoveFromProposition(p));
+        	}
         }
-        assert (legalMoves.size() > 0);
         return legalMoves;
     }
 

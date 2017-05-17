@@ -142,14 +142,8 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
 
     public Set<Proposition> propLegals (Role role,MachineState state) {
     	markBases(state);
-    	Set<Proposition> legals = new HashSet<Proposition>();
     	Map<Role,Set<Proposition>> propMap = propNet.getLegalPropositions();
-    	for (Role r : roles) {
-    		if(role == r) {
-    			legals = propMap.get(r);
-    			break;
-    		}
-    	}
+    	Set<Proposition> legals = propMap.get(role);
     	Set<Proposition> actions = new HashSet<Proposition>();
     	for (Proposition p : legals) {
     		if (propMark(p)) {

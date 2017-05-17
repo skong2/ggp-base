@@ -71,17 +71,14 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     }
 
     // TODO: Fix to take in gdl sentence for input props to be marked as true
-    public boolean markActions(MachineState state) {
-    	//get list of moves possible from current state
-    	Set<GdlSentence> gdls = state.getContents();
-    	for (GdlSentence gdl : gdls) {
-    		Proposition prop = actions.get(gdl);
-    		if (prop != null) {
-        		prop.setValue(true);
-        		actions.put(gdl, prop);
-    		}
+    public boolean markActions(MachineState state, List<Move> moves) {
+    	//assume list of moves entered is in same order as list of roles from getRoles()
+    	List<GdlSentence> doeses = toDoes(moves);
+    	for(int i=0; i < roles.size(); i++) {
+    		Proposition action = actions.get(doeses.get(i));
+    		action.setValue(true);
     	}
-		return true;
+    	return true;
     }
 
     public boolean clearPropnet() {

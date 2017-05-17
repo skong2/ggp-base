@@ -92,15 +92,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return true;
     }
 
-//    function propmarkp (p)
-//    {if (p.type=='base') {return p.mark};
-//     if (p.type=='input') {return p.mark};
-//     if (p.type=='view') {return propmarkp(p.source)};
-//     if (p.type=='negation') {return propmarknegation(p)};
-//     if (p.type=='conjunction') {return propmarkconjunction(p)};
-//     if (p.type=='disjunction') {return propmarkdisjunction(p)};
-//     return false}
-
     public boolean propMark(Proposition p) {
     	//if p is a base
     	if (bases.containsKey(p.getName())) {
@@ -168,7 +159,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return actions;
     }
 
-    //TODO: Check return type and overall functionality of this function
     public Set<Proposition> propNext(Move move, MachineState state) {
     	markActions(state);
     	markBases(state);
@@ -268,23 +258,12 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         return legalMoves;
     }
 
-
-//function propnext (move,state,propnet)
-// {markactions(move,propnet);
-//  markbases(state,propnet);
-//  var bases = propnet.bases;
-//  var nexts = seq();
-//  for (var i=0; i<bases.length; i++)
-//      {nexts[i] = propmarkp(bases[i].source.source)};
-//  return nexts}
-
     /**
      * Computes the next state given state and the list of moves.
      */
     @Override
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
-        // TODO: Compute the next state.
     	for (Move m : moves) {
     		Set<Proposition> nexts = propNext(m,state);
     		for (Proposition p : nexts) {
@@ -295,10 +274,11 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     }
 
     public List<Proposition> order = new LinkedList<Proposition>();
+    public Map<Component, Boolean> unvisited = new HashMap<Component, Boolean>();
 
-    public Map<Component, Boolean> visitTopological(Component c, Map<Component, Boolean> unvisited, Map<GdlSentence, Proposition> bases, Map<GdlSentence, Proposition> inputs) {
-    	if (unvisited.get(c)) {
-    		return unvisited;
+    public void visitTopological(Component c, Map<GdlSentence, Proposition> bases, Map<GdlSentence, Proposition> inputs) {
+    	if (unvisited.get(c) == null) {
+    		return;
     	} else {
     		unvisited.put(c, true);
     		Set<Component> neighbors = c.getOutputs();
@@ -307,12 +287,12 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
             	if (bases.values().contains(c) || inputs.values().contains(c)) {
             		continue;
             	}
-            	unvisited = visitTopological(neighbor, unvisited, bases, inputs);
+            	visitTopological(neighbor, bases, inputs);
     		}
     		unvisited.remove(c);
-    		order.add(0, (Proposition) c);
+    		if(c instanceof Proposition) order.add(0, (Proposition) c);
     	}
-    	return unvisited;
+    	return;
     }
 
     /**
@@ -345,7 +325,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         Map<GdlSentence, Proposition> inputs = propNet.getInputPropositions();
 
         // 0 for unmarked, 1 for temp mark, remove for perm mark
-        Map<Component, Boolean> unvisited = new HashMap<Component, Boolean>();
+        unvisited = new HashMap<Component, Boolean>();
         for (Component c: components) {
         	if (bases.values().contains(c) || inputs.values().contains(c)) {
         		continue;
@@ -354,7 +334,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         }
         while (!unvisited.isEmpty()) {
         	Component selection = (Component) unvisited.keySet().toArray()[0];
-        	unvisited = visitTopological(selection, unvisited, bases, inputs);
+        	visitTopological(selection, bases, inputs);
         }
 
         return new LinkedList<Proposition>(order);

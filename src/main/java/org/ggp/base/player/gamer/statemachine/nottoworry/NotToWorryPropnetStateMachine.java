@@ -60,7 +60,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
 
     public boolean markBases(MachineState state) {
     	Set<GdlSentence> gdls = state.getContents();
-        bases = propNet.getBasePropositions();
     	for (GdlSentence gdl : gdls) {
     		Proposition prop = bases.get(gdl);
     		if (prop != null) {
@@ -74,7 +73,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     public boolean markActions(MachineState state) {
     	//get list of moves possible from current state
     	Set<GdlSentence> gdls = state.getContents();
-    	actions = propNet.getInputPropositions();
     	for (GdlSentence gdl : gdls) {
     		Proposition prop = actions.get(gdl);
     		if (prop != null) {
@@ -144,19 +142,18 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	markBases(state);
     	Map<Role,Set<Proposition>> propMap = propNet.getLegalPropositions();
     	Set<Proposition> legals = propMap.get(role);
-    	Set<Proposition> actions = new HashSet<Proposition>();
+    	Set<Proposition> legalActions = new HashSet<Proposition>();
     	for (Proposition p : legals) {
     		if (propMark(p)) {
-    			actions.add(p);
+    			legalActions.add(p);
     		}
     	}
-    	return actions;
+    	return legalActions;
     }
 
     public Set<Proposition> propNext(Move move, MachineState state) {
     	markActions(state);
     	markBases(state);
-    	Map<GdlSentence,Proposition> bases = propNet.getBasePropositions();
     	Set<Proposition> nexts = new HashSet<Proposition>();
     	for (Proposition p : bases.values()) {
     		if (propMark(p)) {
@@ -317,20 +314,17 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         // All of the propositions in the PropNet.
         List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
 
-        Map<GdlSentence, Proposition> bases = propNet.getBasePropositions();
-        Map<GdlSentence, Proposition> inputs = propNet.getInputPropositions();
-
         // 0 for unmarked, 1 for temp mark, remove for perm mark
         unvisited = new HashMap<Component, Boolean>();
         for (Component c: components) {
-        	if (bases.values().contains(c) || inputs.values().contains(c)) {
+        	if (bases.values().contains(c) || actions.values().contains(c)) {
         		continue;
         	}
         	unvisited.put(c, false);
         }
         while (!unvisited.isEmpty()) {
         	Component selection = (Component) unvisited.keySet().toArray()[0];
-        	visitTopological(selection, bases, inputs);
+        	visitTopological(selection, bases, actions);
         }
 
         return new LinkedList<Proposition>(order);
@@ -400,7 +394,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
 	public MachineState getStateFromBase()
     {
         Set<GdlSentence> contents = new HashSet<GdlSentence>();
-        for (Proposition p : propNet.getBasePropositions().values())
+        for (Proposition p : bases.values())
         {
             p.setValue(p.getSingleInput().getValue());
             if (p.getValue())

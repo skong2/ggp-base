@@ -70,7 +70,9 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return true;
     }
 
-    public boolean markActions(MachineState state, List<Move> moves) {
+
+    // TODO: Fix to take in gdl sentence for input props to be marked as true
+    public boolean markActions(List<Move> moves) {
     	//assume list of moves entered is in same order as list of roles from getRoles()
     	List<GdlSentence> doeses = toDoes(moves);
     	for(int i=0; i < roles.size(); i++) {
@@ -223,16 +225,9 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
-    	Set<GdlSentence> doeses = new HashSet<GdlSentence>(toDoes(moves));
-    	for (GdlSentence gdl : doeses) {
-    		actions.get(gdl);
-    	}
-    	//TODO: FIX
-    	for (Proposition p : ordering) {
-    		if (doeses.contains(p.getName())) {
-    			p.setValue(propMark(p));
-    		}
-    	}
+    	markActions(moves);
+    	markBases(state);
+
         return getStateFromBase();
     }
 

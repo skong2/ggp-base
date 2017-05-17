@@ -209,7 +209,6 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			System.out.println(getStateMachine().getGoal(state, role));
 			return getStateMachine().getGoal(state, role);
 		}
-		System.out.println("Not terminal state");
 		ArrayList<Move> moves = new ArrayList<Move>();
 		for (int i = 0; i < getStateMachine().getRoles().size(); i++) {
 			List<Move> options = getStateMachine().getLegalMoves(state, getStateMachine().getRoles().get(i));

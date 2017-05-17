@@ -92,15 +92,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	return true;
     }
 
-    public boolean propMark(Proposition p) {
-    	//if p is a base
-    	if (bases.containsKey(p.getName())) {
-    		return p.getValue();
-    	}
-    	//if p is an action
-    	if (actions.containsKey(p.getName())) {
-    		return p.getValue();
-    	}
+    public boolean propMark(Component p) {
     	//if p is a conjunction
     	if ((Component) p instanceof And) {
     		return propMarkConjunction(p);
@@ -113,27 +105,35 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	if ((Component) p instanceof Or) {
     		return propMarkDisjunction(p);
     	}
-    	return propMark((Proposition) p.getSingleInput());
+    	//if p is a base
+    	if (bases.containsKey(((Proposition) p).getName())) {
+    		return p.getValue();
+    	}
+    	//if p is an action
+    	if (actions.containsKey(((Proposition) p).getName())) {
+    		return p.getValue();
+    	}
+    	return propMark(p.getSingleInput());
     }
 
-    public boolean propmarkNegation (Proposition p) {
-    	return !propMark((Proposition)p.getSingleInput());
+    public boolean propmarkNegation (Component p) {
+    	return !propMark(p.getSingleInput());
     }
 
-    public boolean propMarkConjunction (Proposition p) {
+    public boolean propMarkConjunction (Component p) {
     	Set<Component> sources = p.getInputs();
     	for (Component component : sources) {
-    		if (!propMark((Proposition)component)) {
+    		if (!propMark(component)) {
     			return false;
     		}
     	}
     	return true;
     }
 
-    public boolean propMarkDisjunction (Proposition p) {
+    public boolean propMarkDisjunction (Component p) {
     	Set<Component> sources = p.getInputs();
     	for (Component component : sources) {
-    		if (propMark((Proposition)component)) {
+    		if (propMark(component)) {
     			return true;
     		}
     	}
@@ -252,8 +252,10 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
             throws MoveDefinitionException {
         Set<Proposition> legals = propLegals(role,state);
         List<Move> legalMoves = new ArrayList<Move>();
+
         for (Proposition p : legals) {
         	legalMoves.add(getMoveFromProposition(p));
+
         }
         return legalMoves;
     }

@@ -100,7 +100,11 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     }
 
     public boolean clearPropnet() {
-    	for (Proposition prop : bases.values()) {
+    	//clear bases and actions by setting their propositions to false
+    	for(Proposition prop: bases.values()) {
+    		prop.setValue(false);
+    	}
+    	for(Proposition prop: actions.values()) {
     		prop.setValue(false);
     	}
     	return true;
@@ -160,6 +164,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
      */
     @Override
     public boolean isTerminal(MachineState state) {
+    	clearPropnet();
     	markBases(state);
     	return propMark(propNet.getTerminalProposition());
     }
@@ -174,6 +179,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public int getGoal(MachineState state, Role role)
             throws GoalDefinitionException {
+    	clearPropnet();
     	markBases(state);
     	Map<Role, Set<Proposition>> rewardsMap = propNet.getGoalPropositions();
     	Set<Proposition> rewards = rewardsMap.get(role);
@@ -192,16 +198,22 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
      */
     @Override
     public MachineState getInitialState() {
-    	propNet.getInitProposition().setValue(true);
-    	return getStateFromBase();
+    	// mark all bases
+    	// get state from bases
+    	// mark init as false
+    	// return
 
+    	propNet.getInitProposition().setValue(true);
+    	MachineState init = getStateFromBase();
+    	propNet.getInitProposition().setValue(false);
+    	return init;
     }
 
     /**
      * Computes all possible actions for role.
      */
     @Override
-    public List<Move> findActions(Role role) //TODO: figure out why the f we have this
+    public List<Move> findActions(Role role)
             throws MoveDefinitionException {
         Map<Role, Set<Proposition>> legals = propNet.getLegalPropositions();
         List<Move> moves = new ArrayList<Move>();
@@ -217,6 +229,8 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public List<Move> getLegalMoves(MachineState state, Role role)
             throws MoveDefinitionException {
+    	//need to clear input and bases before propagating every cycle
+    	clearPropnet();
     	markBases(state);
     	Map<Role, Set<Proposition>> propMap = propNet.getLegalPropositions();
     	Set<Proposition> legals = propMap.get(role);
@@ -236,6 +250,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
 //    	System.out.println("before: " + getStateFromBase());
+    	clearPropnet();
     	markActions(moves);
     	markBases(state);
 //    	System.out.println(getStateFromBase());

@@ -15,9 +15,11 @@ import org.ggp.base.util.gdl.grammar.GdlSentence;
 import org.ggp.base.util.propnet.architecture.Component;
 import org.ggp.base.util.propnet.architecture.PropNet;
 import org.ggp.base.util.propnet.architecture.components.And;
+import org.ggp.base.util.propnet.architecture.components.Constant;
 import org.ggp.base.util.propnet.architecture.components.Not;
 import org.ggp.base.util.propnet.architecture.components.Or;
 import org.ggp.base.util.propnet.architecture.components.Proposition;
+import org.ggp.base.util.propnet.architecture.components.Transition;
 import org.ggp.base.util.propnet.factory.OptimizingPropNetFactory;
 import org.ggp.base.util.statemachine.MachineState;
 import org.ggp.base.util.statemachine.Move;
@@ -52,7 +54,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
             roles = propNet.getRoles();
             bases = propNet.getBasePropositions();
         	actions = propNet.getInputPropositions();
-//            ordering = getOrdering();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -69,11 +70,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     		}
     		basesCopy.put(prop.getName(), prop);
     	}
-//    	if (bases.equals(basesCopy)) {
-//    		System.out.println("theyre the same fuck");
-//    	} else {
-//    		System.out.println("Theyre different FUCK");
-//    	}
     	bases = basesCopy;
     	return true;
     }
@@ -90,11 +86,6 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     		}
     		actionsCopy.put(prop.getName(), prop);
     	}
-//    	if (actions.equals(actionsCopy)) {
-//    		System.out.println("theyre the same fuck");
-//    	} else {
-//    		System.out.println("Theyre different FUCK");
-//    	}
     	actions = actionsCopy;
     	return true;
     }
@@ -104,9 +95,9 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	for(Proposition prop: bases.values()) {
     		prop.setValue(false);
     	}
-    	for(Proposition prop: actions.values()) {
-    		prop.setValue(false);
-    	}
+//    	for(Proposition prop: actions.values()) {
+//    		prop.setValue(false);
+//    	}
     	return true;
     }
 
@@ -123,12 +114,21 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     	if ((Component) p instanceof Or) {
     		return propMarkDisjunction(p);
     	}
+    	if ((Component) p instanceof Transition) {
+    		return p.getValue();
+    	}
+    	if ((Component) p instanceof Constant) {
+    		return p.getValue();
+    	}
     	//if p is a base
-    	if (bases.containsKey(((Proposition) p).getName())) {
+    	if (propNet.getBasePropositions().containsKey(((Proposition) p).getName())) {
     		return p.getValue();
     	}
     	//if p is an action
-    	if (actions.containsKey(((Proposition) p).getName())) {
+    	if (propNet.getInputPropositions().containsKey(((Proposition) p).getName())) {
+    		return p.getValue();
+    	}
+    	if (propNet.getInitProposition().equals(p)) {
     		return p.getValue();
     	}
     	return propMark(p.getSingleInput());
@@ -249,12 +249,22 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
     @Override
     public MachineState getNextState(MachineState state, List<Move> moves)
             throws TransitionDefinitionException {
-//    	System.out.println("before: " + getStateFromBase());
     	clearPropnet();
     	markActions(moves);
     	markBases(state);
-//    	System.out.println(getStateFromBase());
-        return getStateFromBase();
+        Set<GdlSentence> contents = new HashSet<GdlSentence>();
+    	for (Proposition p : bases.values())
+        {
+            if (propMark(p.getSingleInput().getSingleInput()))
+            {
+                contents.add(p.getName());
+            }
+
+        }
+//    	System.out.println("CONTENTS -> " + contents);
+//    	System.out.println();
+    	MachineState NS =new MachineState(contents);
+        return NS;
     }
 
     public List<Proposition> order = new LinkedList<Proposition>();
@@ -302,7 +312,7 @@ public class NotToWorryPropnetStateMachine extends SamplePropNetStateMachine {
         List<Component> components = new ArrayList<Component>(propNet.getComponents());
 
         // All of the propositions in the PropNet.
-//        List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
+        // List<Proposition> propositions = new ArrayList<Proposition>(propNet.getPropositions());
 
         // 0 for unmarked, 1 for temp mark, remove for perm mark
         unvisited = new HashMap<Component, Boolean>();

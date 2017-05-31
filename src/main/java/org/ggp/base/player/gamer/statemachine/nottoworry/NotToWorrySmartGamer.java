@@ -386,6 +386,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			//selection = selectMoveAlphabeta(moves);
 			//selection = selectIterative(moves);
 			selection = selectMCTS(moves);
+//			selection = moves.get(0);
 		} else if (roles.size() == 1) {
 			//use compulsive deliberater
 			selection = selectMoveCompulsiveDeliberater(moves);

@@ -28,7 +28,7 @@ public class NotToWorryMonteCarloPlayer extends NotToWorryGamer {
 	private int depthLimit = 5; //hard-coded for now
 	private int probeCount = 4; //hard-coded for now
 	private Random rand = new Random();
-	public static final double timeoutBuffer = 0.7;
+	public static final double timeoutBuffer = 2;
 
 	private class StateLevel {
 		private MachineState state;

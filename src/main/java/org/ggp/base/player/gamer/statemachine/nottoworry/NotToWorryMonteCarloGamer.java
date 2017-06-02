@@ -24,7 +24,7 @@ public class NotToWorryMonteCarloGamer extends NotToWorryGamer {
 	private int maxTime;
 	private boolean foundWin = false;
 	private int totalMobility;
-	public static final double timeoutBuffer = 0.7;
+	public static final double timeoutBuffer = 2;
 	int levels = 4;
 	int count = 4;
 

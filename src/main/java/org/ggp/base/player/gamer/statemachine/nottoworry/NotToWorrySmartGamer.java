@@ -27,7 +27,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	private int depthLimit = 2; //hard-coded for now
 	private int probeCount = 4; //hard-coded for now
 	private Random rand = new Random();
-	public static final double timeoutBuffer = 2;
+	public static final double timeoutBuffer = 2000;
 
 	public boolean timeout() {
 		return System.currentTimeMillis() - start > maxTime - timeoutBuffer;

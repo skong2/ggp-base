@@ -30,7 +30,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	public static final double timeoutBuffer = 2;
 
 	public boolean timeout() {
-		return System.currentTimeMillis() - start > maxTime * timeoutBuffer;
+		return System.currentTimeMillis() - start > maxTime - timeoutBuffer;
 	}
 
 	private class StateLevel {
@@ -61,16 +61,25 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	}
 
 	public TreeNode selectNode(TreeNode node){
+		if (timeout()) {
+			return node;
+		}
 		if(node.visits == 0) return node;
 		double score = 0;
 		TreeNode result = node;
 		if(node.children.size() == 0) return node;
 		for(int i = 0; i < node.children.size(); i++) {
+			if (timeout()) {
+				break;
+			}
 			if(node.children.get(i).visits==0){
 				return node.children.get(i);
 			}
 		}
 		for(int i = 0; i < node.children.size(); i++) {
+			if (timeout()) {
+				break;
+			}
 			TreeNode child = node.children.get(i);
 			double newScore = child.utility/child.visits+Math.sqrt(2*Math.log(child.parent.visits)/child.visits);
 			if(newScore > score) {
@@ -82,9 +91,18 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	}
 
 	public boolean expand(TreeNode node) throws MoveDefinitionException, TransitionDefinitionException{
+		if (timeout()) {
+			return true;
+		}
 		for(Move move : getStateMachine().getLegalMoves(node.state, getRole())) {
+			if (timeout()) {
+				break;
+			}
 			List<List<Move>> actions = getStateMachine().getLegalJointMoves(node.state, getRole(), move);
 			for(int i = 0; i < actions.size(); i++) {
+				if (timeout()) {
+					break;
+				}
 				if(getStateMachine().isTerminal(node.state)) continue;
 				MachineState newState = getStateMachine().getNextState(node.state, actions.get(i));
 				TreeNode newNode = new TreeNode(node, newState, move);
@@ -95,6 +113,9 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	}
 
 	public boolean backpropagate(TreeNode node, double score) {
+		if (timeout()) {
+			return true;
+		}
 		node.visits++;
 		node.utility = node.utility + score;
 		if(node.parent != null) backpropagate(node.parent, score);
@@ -103,15 +124,18 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 
 	public Move selectMCTS(List<Move> moves) throws MoveDefinitionException, TransitionDefinitionException, GoalDefinitionException {
 		TreeNode root = new TreeNode(null, getCurrentState(), null);
+		Move move = getStateMachine().getLegalMoves(getCurrentState(), getRole()).get(0);
 		while(!timeout()) {
 			TreeNode node = selectNode(root);
 			expand(node);
 			double utility = monteCarloUtility(getRole(), node.state, probeCount);
 			backpropagate(node, utility);
 		}
-		Move move = null;
 		double maxUtility = Double.MIN_VALUE;
 		for (TreeNode node : root.children) {
+			if (timeout()) {
+				break;
+			}
 			if (node.utility > maxUtility) {
 				maxUtility = node.utility;
 				move = node.conception;

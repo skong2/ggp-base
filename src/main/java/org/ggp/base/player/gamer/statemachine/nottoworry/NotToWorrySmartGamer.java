@@ -198,7 +198,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		while(queue.size() != 0) {
 			StateLevel curr = queue.remove(0);
 			//if time clocks down calculate heuristic
-			if(System.currentTimeMillis() - start > maxTime*timeoutBuffer) {
+			if(timeout()) {
 				if(foundWin) return 0;
 				int goalScore = goalProximityHeuristic(r, curr.state);
 				int mobilityScore = mobilityHeuristic(r, curr.state);
@@ -259,7 +259,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			}
 			return goal;
 		}
-		else if(System.currentTimeMillis() - start > maxTime * timeoutBuffer || depth >= levels) {
+		else if(timeout() || depth >= levels) {
 			if(foundWin) {
 				return 0;
 			}
@@ -297,7 +297,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 			}
 			return goal;
 		}
-		if(System.currentTimeMillis() - start > maxTime * timeoutBuffer) {
+		if(timeout()) {
 			if(foundWin) {
 				return 0;
 			}

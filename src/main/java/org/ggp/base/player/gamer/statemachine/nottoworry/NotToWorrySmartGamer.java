@@ -1,7 +1,6 @@
 package org.ggp.base.player.gamer.statemachine.nottoworry;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -108,25 +107,16 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	}
 
 	public TreeNode selectNode(TreeNode node){
-		if (timeout(timeoutBuffer)) {
-			return node;
-		}
 		if(node.visits == 0) return node;
 		double score = 0;
 		TreeNode result = node;
 		if(node.children.size() == 0) return node;
 		for(int i = 0; i < node.children.size(); i++) {
-			if (timeout(timeoutBuffer)) {
-				break;
-			}
 			if(node.children.get(i).visits==0){
 				return node.children.get(i);
 			}
 		}
 		for(int i = 0; i < node.children.size(); i++) {
-			if (timeout(timeoutBuffer)) {
-				break;
-			}
 			TreeNode child = node.children.get(i);
 			double newScore = child.utility/child.visits+Math.sqrt(2*Math.log(child.parent.visits)/child.visits);
 			if(newScore > score) {
@@ -138,18 +128,9 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	}
 
 	public boolean expandNode(TreeNode node) throws MoveDefinitionException, TransitionDefinitionException{
-		if (timeout(timeoutBuffer)) {
-			return true;
-		}
 		for(Move move : getStateMachine().getLegalMoves(node.state, getRole())) {
-			if (timeout(timeoutBuffer)) {
-				break;
-			}
 			List<List<Move>> actions = getStateMachine().getLegalJointMoves(node.state, getRole(), move);
 			for(int i = 0; i < actions.size(); i++) {
-				if (timeout(timeoutBuffer)) {
-					break;
-				}
 				if(getStateMachine().isTerminal(node.state)) continue;
 				MachineState newState = getStateMachine().getNextState(node.state, actions.get(i));
 				TreeNode newNode = new TreeNode(node, newState, move);
@@ -160,9 +141,6 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 	}
 
 	public boolean backpropagateNode(TreeNode node, double score) {
-		if (timeout(timeoutBuffer)) {
-			return true;
-		}
 		node.visits++;
 		node.utility = node.utility + score;
 		if(node.parent != null) backpropagateNode(node.parent, score);
@@ -180,9 +158,6 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 		}
 		double maxUtility = Double.MIN_VALUE;
 		for (TreeNode node : root.children) {
-			if (timeout(timeoutBuffer)) {
-				return move;
-			}
 			if (node.utility > maxUtility) {
 				maxUtility = node.utility;
 				move = node.conception;
@@ -255,6 +230,7 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 
 	private int monteCarloDepthCharge(Role role, MachineState state) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
+			dCharges += 1;
 			return getStateMachine().getGoal(state, role);
 		}
 		ArrayList<Move> moves = new ArrayList<Move>();
@@ -423,7 +399,6 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 
 		totalMobility = totalMobilityHeuristic();
 
-		Collections.shuffle(moves);
 		Move selection = moves.get(0);
 
 		if (moves.size() > 1) {
@@ -433,7 +408,6 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 				selection = selectMCTS(moves);
 			}
 		}
-
 		long stop = System.currentTimeMillis();
 
 		/**

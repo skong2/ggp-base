@@ -230,7 +230,6 @@ public class NotToWorrySmartGamer extends NotToWorryGamer {
 
 	private int monteCarloDepthCharge(Role role, MachineState state) throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException {
 		if (getStateMachine().isTerminal(state)) {
-			dCharges += 1;
 			return getStateMachine().getGoal(state, role);
 		}
 		ArrayList<Move> moves = new ArrayList<Move>();
